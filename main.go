@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/urfave/cli/v2"
+	"net/http"
 	"os"
 	"resbeat/pkg/resbeat"
 	"resbeat/pkg/resbeat/telemetry"
@@ -56,7 +57,7 @@ func main() {
 
 			cancelCtx := signalHandler.Handle(ctx)
 
-			if err := beatApp.Serve(cancelCtx, host, port, frequency); err != nil {
+			if err := beatApp.Serve(cancelCtx, host, port, frequency); err != http.ErrServerClosed {
 				logger.Fatal(err.Error())
 			}
 

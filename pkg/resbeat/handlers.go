@@ -28,9 +28,13 @@ func NewResBeat() *ResBeat {
 	}
 }
 
+type ShutdownFunc func() error
+
 func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency time.Duration) error {
 	logger := telemetry.FromContext(b.ctx)
-	beatChan := b.monitor.Run(ctx, frequency)
+	beatC := b.monitor.Run(ctx, frequency)
+
+	srv := http.Server{Addr: fmt.Sprintf("%s:%d", host, port)}
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		b.melody.HandleRequest(w, r)
@@ -49,7 +53,7 @@ func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency ti
 			select {
 			case <-ctx.Done():
 				return
-			case <-beatChan:
+			case <-beatC:
 				usage := b.monitor.Usage()
 				usageEncoded, err := json.Marshal(usage)
 
@@ -58,7 +62,7 @@ func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency ti
 					// TODO: move on
 				}
 
-				logger.Debug(fmt.Sprintf("resource utilization updated: %v", usageEncoded))
+				logger.Debug(fmt.Sprintf("resource utilization updated: %v", string(usageEncoded)))
 
 				err = b.melody.Broadcast(usageEncoded)
 
@@ -71,5 +75,15 @@ func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency ti
 
 	logger.Info(fmt.Sprintf("utilization beat is available at ws://%v:%d/ws", host, port))
 
-	return http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), nil)
+	go func() {
+		<-ctx.Done()
+
+		logger.Info("server is shutting down")
+
+		if err := srv.Shutdown(ctx); err != nil {
+			logger.Error(fmt.Sprintf("server failed to shutdown: %v", err))
+		}
+	}()
+
+	return srv.ListenAndServe()
 }

@@ -17,20 +17,21 @@ func (h *SignalHandler) Handle(ctx context.Context) context.Context {
 	// https://medium.com/@matryer/make-ctrl-c-cancel-the-context-context-bd006a8ad6ff
 	ctx, cancel := context.WithCancel(ctx)
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	defer func() {
-		signal.Stop(sigs)
-		cancel()
-	}()
-
 	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+		defer func() {
+			signal.Stop(sigs)
+			cancel()
+		}()
+
 		select {
-		case <-sigs:
-			logger.Info(fmt.Sprintf("resbeat received signal (%v), terminating", "test"))
+		case sig := <-sigs:
+			logger.Info(fmt.Sprintf("resbeat received signal (%v), terminating", sig))
 			cancel()
 		case <-ctx.Done():
+			return
 		}
 	}()
 

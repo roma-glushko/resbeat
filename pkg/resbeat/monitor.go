@@ -3,6 +3,7 @@ package resbeat
 import (
 	"context"
 	"resbeat/pkg/resbeat/readers"
+	"resbeat/pkg/resbeat/telemetry"
 	"sync"
 	"time"
 )
@@ -31,13 +32,18 @@ func (w *Monitor) Usage() *Usage {
 }
 
 func (m *Monitor) Run(ctx context.Context, frequency time.Duration) <-chan bool {
+	logger := telemetry.FromContext(ctx)
 	beat := make(chan bool)
 
 	go func() {
 		timer := time.NewTicker(frequency)
 
-		defer timer.Stop()
-		defer func() { close(beat) }()
+		defer func() {
+			logger.Info("monitor is shutting down")
+
+			timer.Stop()
+			close(beat)
+		}()
 
 		for {
 			select {
