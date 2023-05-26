@@ -41,11 +41,11 @@ func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency ti
 	})
 
 	b.melody.HandleConnect(func(s *melody.Session) {
-		logger.Info("connected")
+		logger.Info("client connected")
 	})
 
 	b.melody.HandleDisconnect(func(s *melody.Session) {
-		logger.Info("disconnected")
+		logger.Info("client disconnected")
 	})
 
 	go func() {
@@ -59,7 +59,7 @@ func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency ti
 
 				if err != nil {
 					logger.Warn(fmt.Sprintf("failed to encode utilization: %s", err))
-					// TODO: move on
+					continue
 				}
 
 				logger.Debug(fmt.Sprintf("resource utilization updated: %v", string(usageEncoded)))

@@ -11,7 +11,7 @@ var rootLogger *zap.Logger
 
 func SetupLogger(ctx context.Context) (*zap.Logger, error) {
 	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	config.OutputPaths = []string{"stdout"}
 
 	logger, err := config.Build(

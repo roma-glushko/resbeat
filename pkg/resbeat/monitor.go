@@ -71,7 +71,7 @@ func (m *Monitor) collectCurrentUsage() *Usage {
 		Memory: &MemoryStats{
 			UsageInBytes:    memoryUsageInBytes,
 			LimitInBytes:    memoryLimitInBytes,
-			UsagePercentage: float32(memoryUsageInBytes / memoryLimitInBytes),
+			UsagePercentage: float64(memoryUsageInBytes) / float64(memoryLimitInBytes),
 		},
 	}
 
