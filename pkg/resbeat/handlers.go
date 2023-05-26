@@ -1,0 +1,75 @@
+package resbeat
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/olahol/melody"
+	"net/http"
+	"resbeat/pkg/resbeat/readers"
+	"resbeat/pkg/resbeat/telemetry"
+	"time"
+)
+
+type ResBeat struct {
+	ctx     context.Context
+	melody  *melody.Melody
+	sig     *SignalHandler
+	monitor *Monitor
+	encoder *json.Encoder
+}
+
+func NewResBeat() *ResBeat {
+	return &ResBeat{
+		melody:  melody.New(),
+		sig:     &SignalHandler{},
+		monitor: NewMonitor(readers.DummyStatsReader{}), // TODO: use strategy to select real readers
+		encoder: &json.Encoder{},
+	}
+}
+
+func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency time.Duration) error {
+	logger := telemetry.FromContext(b.ctx)
+	beatChan := b.monitor.Run(ctx, frequency)
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		b.melody.HandleRequest(w, r)
+	})
+
+	b.melody.HandleConnect(func(s *melody.Session) {
+		logger.Info("connected")
+	})
+
+	b.melody.HandleDisconnect(func(s *melody.Session) {
+		logger.Info("disconnected")
+	})
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-beatChan:
+				usage := b.monitor.Usage()
+				usageEncoded, err := json.Marshal(usage)
+
+				if err != nil {
+					logger.Warn(fmt.Sprintf("failed to encode utilization: %s", err))
+					// TODO: move on
+				}
+
+				logger.Debug(fmt.Sprintf("resource utilization updated: %v", usageEncoded))
+
+				err = b.melody.Broadcast(usageEncoded)
+
+				if err != nil {
+					logger.Warn(fmt.Sprintf("failed to broacast utilization: %s", err))
+				}
+			}
+		}
+	}()
+
+	logger.Info(fmt.Sprintf("utilization beat is available at ws://%v:%d/ws", host, port))
+
+	return http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), nil)
+}
