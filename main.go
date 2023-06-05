@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+// version must be set from the contents of VERSION file by go build's
+// -X main.version= option in the Makefile.
+var version = "unknown"
+
+// commitSha will be the hash that the binary was built from
+// and will be populated by the Makefile
+var commitSha = "unknown"
+
 var ctx context.Context
 var signalHandler *resbeat.SignalHandler
 var beatApp *resbeat.ResBeat
@@ -30,8 +38,10 @@ func main() {
 	logger.Info("resbeat is starting")
 
 	app := &cli.App{
-		Name:  "resbeat",
-		Usage: "🔊 broadcast container resource utilization via websocket",
+		Name:      "resbeat",
+		Usage:     "🔊 broadcast container resource utilization via websocket",
+		Copyright: "Roman Hlushko, 2023",
+		Version:   resbeat.GetVersion(version, commitSha),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "host",
@@ -58,7 +68,7 @@ func main() {
 			cancelCtx := signalHandler.Handle(ctx)
 
 			if err := beatApp.Serve(cancelCtx, host, port, frequency); err != http.ErrServerClosed {
-				logger.Fatal(err.Error())
+				return err
 			}
 
 			return nil

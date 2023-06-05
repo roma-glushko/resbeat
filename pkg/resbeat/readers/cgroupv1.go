@@ -45,51 +45,47 @@ func (s *SubsystemMounts) GetCPUAccountingPath() string {
 	return s.subsystemMounts[cpuAccountingSubsystem]
 }
 
-func getSubsystemsMounts() (*SubsystemMounts, error) {
-	procMount, err := os.Open(procMountsPath)
+func getSubsystemsMounts(mountsPath string) (*SubsystemMounts, error) {
+	procMount, err := os.Open(mountsPath)
 
 	if err != nil {
-
+		return nil, err
 	}
 
 	defer procMount.Close()
 
 	scanner := bufio.NewScanner(procMount)
 
+	subsystemMounts := map[string]string{}
+
 	for scanner.Scan() {
 		mountInfo := mountSplitter.Split(scanner.Text(), -1)
-		mountPath := mountInfo[1]
+		fsType, mountPath := mountInfo[2], mountInfo[1]
 
-		if !strings.Contains(mountPath, "cgroup") {
+		if !strings.Contains(fsType, "cgroup") {
 			continue
 		}
 
-		if strings.Contains(mountPath, "cgroup2") {
+		if strings.Contains(fsType, "cgroup2") {
 			// we are dealing with newer version of cgroups
 			return nil, CGroupV1NotSupported
 		}
 
 		pathParts := strings.Split(mountPath, "/")
-		dirName := pathParts[len(pathParts)-1]
+		subsystem := pathParts[len(pathParts)-1]
 
-		var subsystemMounts map[string]string
-
-		for _, subsystemMountPath := range strings.Split(dirName, ",") {
-			for _, subsystem := range subsystems {
-				if strings.Contains(subsystemMountPath, subsystem) {
-					subsystemMounts[subsystem] = mountPath
-
-					break
-				}
+		for _, requiredSubsystem := range subsystems {
+			if subsystem == requiredSubsystem {
+				subsystemMounts[subsystem] = mountPath
+				break
 			}
 		}
 
-		return &SubsystemMounts{
-			subsystemMounts: subsystemMounts,
-		}, nil
 	}
 
-	return nil, CGroupV1NotSupported
+	return &SubsystemMounts{
+		subsystemMounts: subsystemMounts,
+	}, nil
 }
 
 type CGroupV1Reader struct {
@@ -97,6 +93,7 @@ type CGroupV1Reader struct {
 }
 
 func (r *CGroupV1Reader) getStat(statFilePath string) (uint64, error) {
+	// TODO: handle no limit case e.g -1 negative value
 	statFile, err := os.Open(statFilePath)
 
 	if err != nil {
@@ -145,7 +142,7 @@ func (r *CGroupV1Reader) GetCPUPeriodInMicros() (uint64, error) {
 }
 
 func NewCGroupV1Reader() (*CGroupV1Reader, error) {
-	subsystemMounts, err := getSubsystemsMounts()
+	subsystemMounts, err := getSubsystemsMounts(procMountsPath)
 
 	if err != nil {
 		return nil, err
