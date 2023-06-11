@@ -1,7 +1,10 @@
 package resbeat
 
+import "time"
+
 type CPUStats struct {
-	LimitInCors     uint64  `json:"limitInCors"`
+	UsageInNanos    uint64  `json:"usageInNanos"`
+	LimitInCors     float64 `json:"limitInCors"`
 	UsagePercentage float64 `json:"usagePercentage"`
 }
 
@@ -12,6 +15,7 @@ type MemoryStats struct {
 }
 
 type Usage struct {
-	CPU    *CPUStats    `json:"cpu,omitempty"`
-	Memory *MemoryStats `json:"memory"`
+	CollectedAt time.Time    `json:"collectedAt"`
+	CPU         *CPUStats    `json:"cpu,omitempty"`
+	Memory      *MemoryStats `json:"memory"`
 }

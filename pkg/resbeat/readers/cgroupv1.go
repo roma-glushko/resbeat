@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -11,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 )
+
+var ErrCGroupNotSupported = errors.New("cgroup version is not supported")
 
 const (
 	procMountsPath         string = "/proc/mounts"
@@ -24,8 +27,6 @@ var subsystems = [...]string{
 	cpuSubsystem,
 	cpuAccountingSubsystem,
 }
-
-var CGroupV1NotSupported = errors.New("cgroup v1 is not supported")
 
 var mountSplitter = regexp.MustCompile("\\s+")
 
@@ -49,10 +50,8 @@ func getSubsystemsMounts(mountsPath string) (*SubsystemMounts, error) {
 	procMount, err := os.Open(mountsPath)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading mounts failed: %v", err)
 	}
-
-	defer procMount.Close()
 
 	scanner := bufio.NewScanner(procMount)
 
@@ -68,7 +67,8 @@ func getSubsystemsMounts(mountsPath string) (*SubsystemMounts, error) {
 
 		if strings.Contains(fsType, "cgroup2") {
 			// we are dealing with newer version of cgroups
-			return nil, CGroupV1NotSupported
+			_ = procMount.Close()
+			return nil, ErrCGroupNotSupported
 		}
 
 		pathParts := strings.Split(mountPath, "/")
@@ -85,7 +85,7 @@ func getSubsystemsMounts(mountsPath string) (*SubsystemMounts, error) {
 
 	return &SubsystemMounts{
 		subsystemMounts: subsystemMounts,
-	}, nil
+	}, procMount.Close()
 }
 
 type CGroupV1Reader struct {
@@ -100,13 +100,12 @@ func (r *CGroupV1Reader) getStat(statFilePath string) (uint64, error) {
 		return 0, err
 	}
 
-	defer statFile.Close()
-
 	var statRaw []byte
 
 	statRaw, err = io.ReadAll(statFile)
 
 	if err != nil {
+		_ = statFile.Close()
 		return 0, err
 	}
 
@@ -115,10 +114,11 @@ func (r *CGroupV1Reader) getStat(statFilePath string) (uint64, error) {
 	statValue, err = strconv.ParseUint(string(bytes.TrimSpace(statRaw)), 10, 64)
 
 	if err != nil {
+		_ = statFile.Close()
 		return 0, err
 	}
 
-	return statValue, nil
+	return statValue, statFile.Close()
 }
 
 func (r *CGroupV1Reader) GetMemoryUsageInBytes() (uint64, error) {
@@ -127,6 +127,22 @@ func (r *CGroupV1Reader) GetMemoryUsageInBytes() (uint64, error) {
 
 func (r *CGroupV1Reader) GetMemoryLimitInBytes() (uint64, error) {
 	return r.getStat(filepath.Join(r.subsystemMounts.GetMemoryPath(), "memory.limit_in_bytes"))
+}
+
+func (r *CGroupV1Reader) GetCPUUsageLimitInCores() (float64, error) {
+	cpuQuota, err := r.GetCPUQuotaInMicros()
+
+	if err != nil {
+		return 0, err
+	}
+
+	cpuPeriod, err := r.GetCPUPeriodInMicros()
+
+	if err != nil {
+		return 0, err
+	}
+
+	return float64(cpuQuota) / float64(cpuPeriod), nil
 }
 
 func (r *CGroupV1Reader) GetCPUUsageInNanos() (uint64, error) {

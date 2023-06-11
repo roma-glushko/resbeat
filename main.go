@@ -35,11 +35,9 @@ func main() {
 		panic(err)
 	}
 
-	logger.Info("resbeat is starting")
-
 	app := &cli.App{
 		Name:      "resbeat",
-		Usage:     "🔊 broadcast container resource utilization via websocket",
+		Usage:     "🔊 broadcast container resource utilization via HTTP polling or websocket",
 		Copyright: "Roman Hlushko, 2023",
 		Version:   resbeat.GetVersion(version, commitSha),
 		Flags: []cli.Flag{
@@ -52,8 +50,9 @@ func main() {
 				Value: 8000,
 			},
 			&cli.StringFlag{
-				Name:  "logformat",
-				Value: "ecs",
+				Name:  "log-format",
+				Usage: "set the log format ('text' (default), or 'json')",
+				Value: "text",
 			},
 			&cli.DurationFlag{
 				Name:  "frequency",

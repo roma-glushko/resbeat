@@ -5,11 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/olahol/melody"
+	"go.uber.org/zap"
 	"net/http"
 	"resbeat/pkg/resbeat/readers"
 	"resbeat/pkg/resbeat/telemetry"
 	"time"
 )
+
+type HTTPError struct {
+	Message string `json:"message"`
+}
 
 type ResBeat struct {
 	ctx     context.Context
@@ -23,7 +28,7 @@ func NewResBeat() *ResBeat {
 	return &ResBeat{
 		melody:  melody.New(),
 		sig:     &SignalHandler{},
-		monitor: NewMonitor(readers.DummyStatsReader{}), // TODO: use strategy to select real readers
+		monitor: NewMonitor(readers.NewDummyStatsReader()), // TODO: use strategy to select real readers
 		encoder: &json.Encoder{},
 	}
 }
@@ -34,18 +39,64 @@ func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency ti
 	logger := telemetry.FromContext(b.ctx)
 	beatC := b.monitor.Run(ctx, frequency)
 
+	logger.Info("resbeat is starting")
+
 	srv := http.Server{Addr: fmt.Sprintf("%s:%d", host, port)}
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		b.melody.HandleRequest(w, r)
+	// websocket API
+	http.HandleFunc("/ws/", func(w http.ResponseWriter, r *http.Request) {
+		err := b.melody.HandleRequest(w, r)
+
+		if err != nil {
+			logger.Error(err.Error())
+		}
+	})
+
+	// HTTP Polling API
+	http.HandleFunc("/usage/", func(w http.ResponseWriter, r *http.Request) {
+		jsonEncoder := json.NewEncoder(w)
+		usage := b.monitor.Usage()
+
+		w.Header().Set("Content-Type", "application/json")
+
+		w.WriteHeader(http.StatusOK)
+		err := jsonEncoder.Encode(usage)
+
+		if err != nil {
+			errMsg := fmt.Sprintf("error building the response: %v", err)
+			logger.Error(errMsg)
+
+			w.WriteHeader(http.StatusInternalServerError)
+			err = jsonEncoder.Encode(HTTPError{Message: errMsg})
+
+			if err != nil {
+				logger.Error(err.Error())
+			}
+
+			return
+		}
 	})
 
 	b.melody.HandleConnect(func(s *melody.Session) {
-		logger.Info("client connected")
+		logger.Info(
+			"websocket client connected",
+			zap.String("remoteAddr", s.RemoteAddr().String()),
+		)
 	})
 
 	b.melody.HandleDisconnect(func(s *melody.Session) {
-		logger.Info("client disconnected")
+		logger.Info(
+			"websocket client disconnected",
+			zap.String("remoteAddr", s.RemoteAddr().String()),
+		)
+	})
+
+	b.melody.HandleError(func(s *melody.Session, err error) {
+
+		logger.Warn(
+			fmt.Sprintf("websocket client error: %v", err),
+			zap.String("remoteAddr", s.RemoteAddr().String()),
+		)
 	})
 
 	go func() {
@@ -73,12 +124,18 @@ func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency ti
 		}
 	}()
 
-	logger.Info(fmt.Sprintf("utilization beat is available at ws://%v:%d/ws", host, port))
+	logger.Info(fmt.Sprintf(
+		"resbeat is up and running "+
+			"\n • Websocket API: ws://%v:%d/ws/ "+
+			"\n • HTTP Polling API: http://%v:%d/usage/",
+		host, port,
+		host, port,
+	))
 
 	go func() {
 		<-ctx.Done()
 
-		logger.Info("server is shutting down")
+		logger.Info("resbeat is shutting down")
 
 		if err := srv.Shutdown(ctx); err != nil {
 			logger.Error(fmt.Sprintf("server failed to shutdown: %v", err))
