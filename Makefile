@@ -10,5 +10,8 @@ run: ##
 build: ## Build a binary
 	@GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS_COMMON)" -o ./dist/resbeat
 
-sandbox-cgroupv1:
-	@docker run --cpus="2" --memory="256m" -d alpine:3.18 sleep 1200
+image:
+	@docker build --tag romahlushko/resbeat .
+
+sandbox: image
+	@docker run -p 8000:8000 --cpus="0.01" --memory="15m" --name resbeat-sandbox -d romahlushko/resbeat:latest

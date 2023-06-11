@@ -25,10 +25,16 @@ type ResBeat struct {
 }
 
 func NewResBeat() *ResBeat {
+	reader, err := readers.NewCGroupV1Reader()
+
+	if err != nil {
+		panic("could not init cgroupv1 reader")
+	}
+
 	return &ResBeat{
 		melody:  melody.New(),
 		sig:     &SignalHandler{},
-		monitor: NewMonitor(readers.NewDummyStatsReader()), // TODO: use strategy to select real readers
+		monitor: NewMonitor(reader), // TODO: use strategy to select real readers
 		encoder: &json.Encoder{},
 	}
 }

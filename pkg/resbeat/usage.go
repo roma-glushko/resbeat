@@ -4,7 +4,7 @@ import "time"
 
 type CPUStats struct {
 	UsageInNanos    uint64  `json:"usageInNanos"`
-	LimitInCors     float64 `json:"limitInCors"`
+	LimitInCores    float64 `json:"limitInCors"`
 	UsagePercentage float64 `json:"usagePercentage"`
 }
 

@@ -3,7 +3,6 @@ package resbeat
 import (
 	"context"
 	"fmt"
-	"math"
 	"resbeat/pkg/resbeat/telemetry"
 	"sync"
 	"time"
@@ -144,11 +143,11 @@ func (m *Monitor) collectCPUUsage() (*CPUStats, error) {
 		usageDelta = usageInNanos - prevCPUUsage.CPU.UsageInNanos
 		timeDelta := time.Now().UTC().Nanosecond() - prevCPUUsage.CollectedAt.Nanosecond()
 
-		usagePercentage = math.Abs(float64(usageDelta) / float64(timeDelta) / limitInCores)
+		usagePercentage = float64(usageDelta) / float64(timeDelta) / limitInCores / 100.0
 	}
 
 	return &CPUStats{
-		LimitInCors:     limitInCores,
+		LimitInCores:    limitInCores,
 		UsageInNanos:    usageDelta,
 		UsagePercentage: usagePercentage,
 	}, nil
