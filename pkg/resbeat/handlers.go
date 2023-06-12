@@ -7,7 +7,7 @@ import (
 	"github.com/olahol/melody"
 	"go.uber.org/zap"
 	"net/http"
-	"resbeat/pkg/resbeat/readers"
+	"resbeat/pkg/resbeat/readers/system"
 	"resbeat/pkg/resbeat/telemetry"
 	"time"
 )
@@ -24,17 +24,18 @@ type ResBeat struct {
 	encoder *json.Encoder
 }
 
-func NewResBeat() *ResBeat {
-	reader, err := readers.NewCGroupV1Reader()
+func NewResBeat(ctx context.Context) *ResBeat {
+	logger := telemetry.FromContext(b.ctx)
+	systemReader, err := system.NewSystemReader()
 
 	if err != nil {
-		panic("could not init cgroupv1 reader")
+		logger.Error(fmt.Sprintf("could not init a system stat reader: %v", err))
 	}
 
 	return &ResBeat{
 		melody:  melody.New(),
 		sig:     &SignalHandler{},
-		monitor: NewMonitor(reader), // TODO: use strategy to select real readers
+		monitor: NewMonitor(systemReader),
 		encoder: &json.Encoder{},
 	}
 }

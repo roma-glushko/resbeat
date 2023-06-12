@@ -3,27 +3,20 @@ package resbeat
 import (
 	"context"
 	"fmt"
+	"resbeat/pkg/resbeat/readers/system"
 	"resbeat/pkg/resbeat/telemetry"
 	"sync"
 	"time"
 )
 
-// StatsReader represents components that reads resource stats from different resource controllers
-type StatsReader interface {
-	GetMemoryUsageInBytes() (uint64, error)
-	GetMemoryLimitInBytes() (uint64, error)
-	GetCPUUsageLimitInCores() (float64, error)
-	GetCPUUsageInNanos() (uint64, error)
-}
-
 type Monitor struct {
-	reader    StatsReader
+	reader    *system.SystemStatsReader
 	mtx       *sync.RWMutex
 	prevUsage *Usage
 	usage     *Usage
 }
 
-func NewMonitor(reader StatsReader) *Monitor {
+func NewMonitor(reader *system.SystemStatsReader) *Monitor {
 	return &Monitor{
 		reader:    reader,
 		mtx:       &sync.RWMutex{},
@@ -76,7 +69,23 @@ func (m *Monitor) Run(ctx context.Context, frequency time.Duration) <-chan bool 
 }
 
 func (m *Monitor) collectCurrentUsage(ctx context.Context) *Usage {
+	currentUsage := Usage{
+		CollectedAt: time.Now().UTC(),
+		System:      m.collectSystemUsage(ctx),
+	}
+
+	return &currentUsage
+}
+
+func (m *Monitor) collectSystemUsage(ctx context.Context) *SystemStats {
 	logger := telemetry.FromContext(ctx)
+	systemReader := m.reader
+
+	if systemReader == nil {
+		// the system reader was not inited successfully
+		return nil
+	}
+
 	cpuUsage, err := m.collectCPUUsage()
 
 	if err != nil {
@@ -89,23 +98,26 @@ func (m *Monitor) collectCurrentUsage(ctx context.Context) *Usage {
 		logger.Error(fmt.Sprintf("error during collecting memory stats: %v (usage data will be skipped)", err))
 	}
 
-	currentUsage := Usage{
-		CollectedAt: time.Now().UTC(),
-		CPU:         cpuUsage,
-		Memory:      memoryUsage,
+	return &SystemStats{
+		CPU:    cpuUsage,
+		Memory: memoryUsage,
 	}
-
-	return &currentUsage
 }
 
 func (m *Monitor) collectMemoryUsage() (*MemoryStats, error) {
-	memoryUsageInBytes, err := m.reader.GetMemoryUsageInBytes()
+	if m.reader == nil {
+		return nil, nil
+	}
+
+	systemReader := *m.reader
+
+	memoryUsageInBytes, err := systemReader.GetMemoryUsageInBytes()
 
 	if err != nil {
 		return nil, err
 	}
 
-	memoryLimitInBytes, err := m.reader.GetMemoryLimitInBytes()
+	memoryLimitInBytes, err := systemReader.GetMemoryLimitInBytes()
 
 	if err != nil {
 		return nil, err
@@ -119,18 +131,23 @@ func (m *Monitor) collectMemoryUsage() (*MemoryStats, error) {
 }
 
 func (m *Monitor) collectCPUUsage() (*CPUStats, error) {
+	if m.reader == nil {
+		return nil, nil
+	}
+
+	systemReader := *m.reader
 	prevCPUUsage := m.prevUsage
 
 	var usagePercentage float64
 	var usageDelta uint64
 
-	limitInCores, err := m.reader.GetCPUUsageLimitInCores()
+	limitInCores, err := systemReader.GetCPUUsageLimitInCores()
 
 	if err != nil {
 		return nil, err
 	}
 
-	usageInNanos, err := m.reader.GetCPUUsageInNanos()
+	usageInNanos, err := systemReader.GetCPUUsageInNanos()
 
 	if err != nil {
 		return nil, err
@@ -140,7 +157,7 @@ func (m *Monitor) collectCPUUsage() (*CPUStats, error) {
 		usagePercentage = 0.0
 		usageDelta = usageInNanos
 	} else {
-		usageDelta = usageInNanos - prevCPUUsage.CPU.UsageInNanos
+		usageDelta = usageInNanos - prevCPUUsage.System.CPU.UsageInNanos
 		timeDelta := time.Now().UTC().Nanosecond() - prevCPUUsage.CollectedAt.Nanosecond()
 
 		usagePercentage = float64(usageDelta) / float64(timeDelta) / limitInCores / 100.0

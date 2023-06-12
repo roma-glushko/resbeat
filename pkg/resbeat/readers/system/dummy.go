@@ -1,4 +1,4 @@
-package readers
+package system
 
 type ByteSize uint64
 

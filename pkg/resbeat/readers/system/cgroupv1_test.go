@@ -1,4 +1,4 @@
-package readers
+package system
 
 import (
 	"github.com/stretchr/testify/assert"
