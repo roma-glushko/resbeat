@@ -16,23 +16,23 @@ type SystemStatsReader interface {
 }
 
 // NewSystemReader
-func NewSystemReader() (SystemStatsReader, error) {
+func NewSystemReader() (*SystemStatsReader, error) {
 	var reader SystemStatsReader
 
-	reader, err := NewCGroupV2Reader()
+	//reader, err := NewCGroupV2Reader()
+	//
+	//if err == nil {
+	//	return reader, nil
+	//}
+	//
+	//if err != nil && !errors.Is(err, ErrCGroupNotSupported) {
+	//	return nil, fmt.Errorf("faild to read cgroupv2 controller: %w", err)
+	//}
+
+	reader, err := NewCGroupV1Reader()
 
 	if err == nil {
-		return reader, nil
-	}
-
-	if err != nil && !errors.Is(err, ErrCGroupNotSupported) {
-		return nil, fmt.Errorf("faild to read cgroupv2 controller: %w", err)
-	}
-
-	reader, err = NewCGroupV1Reader()
-
-	if err == nil {
-		return reader, nil
+		return &reader, nil
 	}
 
 	if err != nil && errors.Is(err, ErrCGroupNotSupported) {
