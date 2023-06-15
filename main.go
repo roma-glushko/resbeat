@@ -22,14 +22,11 @@ var ctx context.Context
 var signalHandler *resbeat.SignalHandler
 var beatApp *resbeat.ResBeat
 
-func init() {
+func main() {
 	ctx = context.Background()
 	signalHandler = &resbeat.SignalHandler{}
-	beatApp = resbeat.NewResBeat()
-}
-
-func main() {
 	logger, err := telemetry.SetupLogger(ctx)
+	beatApp = resbeat.NewResBeat(ctx)
 
 	if err != nil {
 		panic(err)

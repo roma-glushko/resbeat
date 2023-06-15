@@ -25,7 +25,7 @@ type ResBeat struct {
 }
 
 func NewResBeat(ctx context.Context) *ResBeat {
-	logger := telemetry.FromContext(b.ctx)
+	logger := telemetry.FromContext(ctx)
 	systemReader, err := system.NewSystemReader()
 
 	if err != nil {
