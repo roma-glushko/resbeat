@@ -5,7 +5,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const loggerKey = "telemetry"
+type contextKey string
+
+const loggerKey = contextKey("telemetry")
 
 var rootLogger *zap.Logger
 
