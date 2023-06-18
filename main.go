@@ -25,6 +25,7 @@ var beatApp *resbeat.ResBeat
 func main() {
 	ctx = context.Background()
 	signalHandler = &resbeat.SignalHandler{}
+
 	logger, err := telemetry.SetupLogger(ctx)
 	beatApp = resbeat.NewResBeat(ctx)
 
@@ -51,14 +52,21 @@ func main() {
 				Usage: "set the log format ('text' (default), or 'json')",
 				Value: "text",
 			},
+			&cli.StringFlag{
+				Name:  "log-level",
+				Usage: "set the min log level (debug, info (default), warn, error)",
+				Value: "text",
+			},
 			&cli.DurationFlag{
 				Name:  "frequency",
-				Value: 5 * time.Second,
+				Value: 3 * time.Second,
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
 			host := cCtx.String("host")
 			port := cCtx.Int("port")
+			logLevel := cCtx.String("log-level")
+			logFormat := cCtx.String("log-format")
 			frequency := cCtx.Duration("frequency")
 
 			cancelCtx := signalHandler.Handle(ctx)
