@@ -10,9 +10,8 @@ import (
 	"os"
 )
 
-type contextKey string
-
-const loggerKey = contextKey("telemetry")
+type loggerCtxKey struct {
+}
 
 type LogFormats = string
 
@@ -62,18 +61,18 @@ func SetupLogger(ctx context.Context, format LogFormats, level string) (context.
 }
 
 func WithContext(ctx context.Context, logger *zap.Logger) context.Context {
-	if lp, ok := ctx.Value(loggerKey).(*zap.Logger); ok {
+	if lp, ok := ctx.Value(loggerCtxKey{}).(*zap.Logger); ok {
 		if lp == logger {
 			// Do not store same logger.
 			return ctx
 		}
 	}
 
-	return context.WithValue(ctx, loggerKey, logger)
+	return context.WithValue(ctx, loggerCtxKey{}, logger)
 }
 
 func FromContext(ctx context.Context) *zap.Logger {
-	if l, ok := ctx.Value(loggerKey).(*zap.Logger); ok {
+	if l, ok := ctx.Value(loggerCtxKey{}).(*zap.Logger); ok {
 		return l
 	}
 
