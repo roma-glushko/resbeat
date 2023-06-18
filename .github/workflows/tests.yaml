@@ -1,4 +1,4 @@
-name: Continues Checks
+name: tests
 
 on:
   push:
