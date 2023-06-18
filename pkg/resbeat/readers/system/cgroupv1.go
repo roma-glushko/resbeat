@@ -28,7 +28,7 @@ var requiredSubsystems = [...]string{
 	cpuAccountingSubsystem,
 }
 
-var mountSplitter = regexp.MustCompile(`\\s+`)
+var mountSplitter = regexp.MustCompile(`\s+`)
 
 type SubsystemMounts struct {
 	subsystemMounts map[string]string
