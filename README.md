@@ -1,5 +1,7 @@
 # 🔊resbeat
 
+[![codecov](https://codecov.io/gh/roma-glushko/resbeat/branch/main/graph/badge.svg?token=BNJBL3XJ0O)](https://codecov.io/gh/roma-glushko/resbeat)
+
 resbeat is a container agent that can expose container's resource usage via HTTP or websocket API:
 - /ws/ - a websocket endpoint
 - GET /usage/ - an HTTP polling endpoint
