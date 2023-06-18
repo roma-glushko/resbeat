@@ -13,6 +13,12 @@ build: ## Build a binary
 image:
 	@docker build --tag romahlushko/resbeat .
 
+tests: ## Run all tests
+	@go test -v -count=1 -race -shuffle=on -coverprofile=coverage.txt ./...
+
+benchmark: ## Run built-in benchmarks
+	@go test -v -shuffle=on -run=- -bench=. -benchtime=1x ./...
+
 release-local:  # Perform all artifacts building locally without releasing them actually
 	@goreleaser release --snapshot --clean
 
