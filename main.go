@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/urfave/cli/v2"
+	"log"
 	"net/http"
 	"os"
 	"resbeat/pkg/resbeat"
@@ -18,21 +19,7 @@ var version = "unknown"
 // and will be populated by the Makefile
 var commitSha = "unknown"
 
-var ctx context.Context
-var signalHandler *resbeat.SignalHandler
-var beatApp *resbeat.ResBeat
-
 func main() {
-	ctx = context.Background()
-	signalHandler = &resbeat.SignalHandler{}
-
-	logger, err := telemetry.SetupLogger(ctx)
-	beatApp = resbeat.NewResBeat(ctx)
-
-	if err != nil {
-		panic(err)
-	}
-
 	app := &cli.App{
 		Name:      "resbeat",
 		Usage:     "🔊 broadcast container resource utilization via HTTP polling or websocket",
@@ -49,13 +36,13 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:  "log-format",
-				Usage: "set the log format ('text' (default), or 'json')",
+				Usage: "set the log format (text (default), or json)",
 				Value: "text",
 			},
 			&cli.StringFlag{
 				Name:  "log-level",
 				Usage: "set the min log level (debug, info (default), warn, error)",
-				Value: "text",
+				Value: "info",
 			},
 			&cli.DurationFlag{
 				Name:  "frequency",
@@ -69,9 +56,20 @@ func main() {
 			logFormat := cCtx.String("log-format")
 			frequency := cCtx.Duration("frequency")
 
-			cancelCtx := signalHandler.Handle(ctx)
+			ctx := context.Background()
+			ctx, logger, err := telemetry.SetupLogger(ctx, logFormat, logLevel)
 
-			if err := beatApp.Serve(cancelCtx, host, port, frequency); err != http.ErrServerClosed {
+			if err != nil {
+				panic(err)
+			}
+
+			defer logger.Sync()
+
+			signalHandler := &resbeat.SignalHandler{}
+			beatApp := resbeat.NewResBeat(ctx)
+			ctx = signalHandler.Handle(ctx)
+
+			if err := beatApp.Serve(ctx, host, port, frequency); err != http.ErrServerClosed {
 				return err
 			}
 
@@ -80,6 +78,6 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		logger.Fatal(err.Error())
+		log.Fatal(err.Error())
 	}
 }

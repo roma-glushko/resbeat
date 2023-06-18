@@ -2,46 +2,84 @@ package telemetry
 
 import (
 	"context"
+	"fmt"
+	"go.elastic.co/ecszap"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"log"
+	"os"
 )
 
 type contextKey string
 
 const loggerKey = contextKey("telemetry")
 
-var rootLogger *zap.Logger
+type LogFormats = string
 
-func SetupLogger(ctx context.Context) (*zap.Logger, error) {
-	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	config.OutputPaths = []string{"stdout"}
+const (
+	PlainFormat LogFormats = "text"
+	JsonFormat  LogFormats = "json"
+)
 
-	logger, err := config.Build(
-		zap.AddStacktrace(zap.ErrorLevel),
-	)
+var logger *zap.Logger
 
-	if err != nil {
-		return nil, err
+func SetupLogger(ctx context.Context, format LogFormats, level string) (context.Context, *zap.Logger, error) {
+	if logger != nil {
+		return ctx, logger, nil
 	}
 
-	logger = logger.Named("resbeat")
-	rootLogger = logger
+	logLevel := zap.InfoLevel
 
-	return logger, nil
+	if level != "" {
+		parsedLevel, err := zapcore.ParseLevel(level)
+
+		if err != nil {
+			log.Println(
+				fmt.Errorf("invalid level, defaulting to INFO: %w", err),
+			)
+		}
+
+		logLevel = parsedLevel
+	}
+
+	var core zapcore.Core
+
+	switch format {
+	case PlainFormat:
+		config := zap.NewDevelopmentEncoderConfig()
+		config.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		encoder := zapcore.NewConsoleEncoder(config)
+
+		core = zapcore.NewCore(encoder, os.Stdout, logLevel)
+	case JsonFormat:
+		config := ecszap.NewDefaultEncoderConfig()
+		core = ecszap.NewCore(config, os.Stdout, logLevel)
+	}
+
+	logger = zap.New(core, zap.AddCaller())
+
+	return WithContext(ctx, logger), logger, nil
 }
 
 func WithContext(ctx context.Context, logger *zap.Logger) context.Context {
+	if lp, ok := ctx.Value(loggerKey).(*zap.Logger); ok {
+		if lp == logger {
+			// Do not store same logger.
+			return ctx
+		}
+	}
+
 	return context.WithValue(ctx, loggerKey, logger)
 }
 
 func FromContext(ctx context.Context) *zap.Logger {
-	if ctx == nil {
-		return rootLogger
+	if l, ok := ctx.Value(loggerKey).(*zap.Logger); ok {
+		return l
 	}
 
-	if logger, ok := ctx.Value(loggerKey).(*zap.Logger); ok {
-		return logger
+	if l := logger; l != nil {
+		return l
 	}
 
-	return rootLogger
+	return zap.NewNop()
 }
