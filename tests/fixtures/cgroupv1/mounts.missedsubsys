@@ -1,0 +1,14 @@
+overlay / overlay rw,relatime,lowerdir=/var/lib/docker/overlay2/l/FBOJLV7YTERPDYQNQIT4J556VY:/var/lib/docker/overlay2/l/Q5HIEHUH6YTT7SKF6OBYGVFSQH:/var/lib/docker/overlay2/l/GVJQ6X33LKTKCVMSZ5ZVV2HEZ6:/var/lib/docker/overlay2/l/LOP2BDN5VQSQVKEU5FDJ7HV3LE:/var/lib/docker/overlay2/l/5TCM43CMS2PHSE7PEDMOVHQOYP:/var/lib/docker/overlay2/l/HSTQO6YS56YYXWBOW6DH2TRGF7:/var/lib/docker/overlay2/l/SRIH6XTOPK4P7ZH5V2ZMMALPMT:/var/lib/docker/overlay2/l/G5NPWIKSAKVIKDSD2QRUGCMRSG:/var/lib/docker/overlay2/l/27ENOMHRTSGSTZTCHTELPIFYB6:/var/lib/docker/overlay2/l/OKLOWMTCEMJSLC3AJUCGEBPUIB:/var/lib/docker/overlay2/l/CZDQGZGZRLM42RD5VD6TIJVI67:/var/lib/docker/overlay2/l/LKB5EC2X7YTEUAOOLQGZLEYU7W:/var/lib/docker/overlay2/l/UJDHONJ4XIQ52266DTPDKHIZMK:/var/lib/docker/overlay2/l/BOCYTGGXPZJR6OE6K76IK7XRXP:/var/lib/docker/overlay2/l/THB5H3CY3WUY2IVZHHDHQPWMZK:/var/lib/docker/overlay2/l/3OHISJ47OCZ4IJBFK352NRMG5L:/var/lib/docker/overlay2/l/M2CCOPMCJYWUZ5JSI4V4JSCF43:/var/lib/docker/overlay2/l/PWEKRJVG4MTQKVNJECPCNGNXCQ:/var/lib/docker/overlay2/l/OODBULCA3MUVB2L2HXCRAX3L4O:/var/lib/docker/overlay2/l/GDRMBR3UBEXNGAFXHVWLY56DUC:/var/lib/docker/overlay2/l/2NQS3LRTBDR5F42Y7QL52THCP2:/var/lib/docker/overlay2/l/4LUSFEMMEFJFBOHR2SYWZ4MG7U:/var/lib/docker/overlay2/l/2OK426C3F2SVABP7PKECQUEEGA,upperdir=/var/lib/docker/overlay2/4f6636b912991e2e17d47cfd543ef13b3f7c5a1ec3a99f10ad9d94b15301dae5/diff,workdir=/var/lib/docker/overlay2/4f6636b912991e2e17d47cfd543ef13b3f7c5a1ec3a99f10ad9d94b15301dae5/work 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /dev tmpfs rw,nosuid,size=65536k,mode=755 0 0
+devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=666 0 0
+sysfs /sys sysfs ro,nosuid,nodev,noexec,relatime 0 0
+tmpfs /sys/fs/cgroup tmpfs rw,nosuid,nodev,noexec,relatime,mode=755 0 0
+cgroup /sys/fs/cgroup/systemd cgroup ro,nosuid,nodev,noexec,relatime,xattr,release_agent=/usr/lib/systemd/systemd-cgroups-agent,name=systemd 0 0
+cgroup /sys/fs/cgroup/cpu,cpuacct cgroup ro,nosuid,nodev,noexec,relatime,cpu,cpuacct 0 0
+cgroup /sys/fs/cgroup/blkio cgroup ro,nosuid,nodev,noexec,relatime,blkio 0 0
+cgroup /sys/fs/cgroup/net_cls,net_prio cgroup ro,nosuid,nodev,noexec,relatime,net_cls,net_prio 0 0
+cgroup /sys/fs/cgroup/perf_event cgroup ro,nosuid,nodev,noexec,relatime,perf_event 0 0
+cgroup /sys/fs/cgroup/pids cgroup ro,nosuid,nodev,noexec,relatime,pids 0 0
+cgroup /sys/fs/cgroup/freezer cgroup ro,nosuid,nodev,noexec,relatime,freezer 0 0
+mqueue /dev/mqueue mqueue rw,nosuid,nodev,noexec,relatime 0 0

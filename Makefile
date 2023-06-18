@@ -10,6 +10,10 @@ run: ##
 build: ## Build a binary
 	@GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS_COMMON)" -o ./dist/resbeat
 
+lint: # Lint the source code
+	@go vet ./...
+	@go mod tidy
+
 image:
 	@docker build --tag romahlushko/resbeat .
 
