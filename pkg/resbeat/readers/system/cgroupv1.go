@@ -22,7 +22,7 @@ const (
 	cpuAccountingSubsystem string = "cpuacct"
 )
 
-var subsystems = [...]string{
+var requiredSubsystems = [...]string{
 	memorySubsystem,
 	cpuSubsystem,
 	cpuAccountingSubsystem,
@@ -50,7 +50,7 @@ func getSubsystemsMounts(mountsPath string) (*SubsystemMounts, error) {
 	procMount, err := os.Open(mountsPath)
 
 	if err != nil {
-		return nil, fmt.Errorf("reading mounts failed: %v", err)
+		return nil, fmt.Errorf("reading mounts file failed: %v", err)
 	}
 
 	scanner := bufio.NewScanner(procMount)
@@ -59,6 +59,12 @@ func getSubsystemsMounts(mountsPath string) (*SubsystemMounts, error) {
 
 	for scanner.Scan() {
 		mountInfo := mountSplitter.Split(scanner.Text(), -1)
+
+		if len(mountInfo) < 6 {
+			// a broken line, skipping it
+			continue
+		}
+
 		fsType, mountPath := mountInfo[2], mountInfo[1]
 
 		if !strings.Contains(fsType, "cgroup") {
@@ -72,15 +78,38 @@ func getSubsystemsMounts(mountsPath string) (*SubsystemMounts, error) {
 		}
 
 		pathParts := strings.Split(mountPath, "/")
-		subsystem := pathParts[len(pathParts)-1]
 
-		for _, requiredSubsystem := range subsystems {
-			if subsystem == requiredSubsystem {
-				subsystemMounts[subsystem] = mountPath
-				break
+		subsystemMountParts := pathParts[:len(pathParts)-1]
+		subsystemNames := strings.Split(pathParts[len(pathParts)-1], ",")
+		mountPartsLen := len(subsystemMountParts)
+
+		for _, subsystem := range subsystemNames {
+			for _, requiredSubsystem := range requiredSubsystems {
+				if subsystem == requiredSubsystem {
+					subsystemPath := make([]string, mountPartsLen, mountPartsLen+1)
+					copy(subsystemPath, subsystemMountParts)
+					subsystemPath = append(subsystemPath, subsystem)
+					subsystemPath[0] = string(filepath.Separator)
+
+					subsystemMounts[subsystem] = filepath.Join(subsystemPath...)
+
+					break
+				}
 			}
 		}
 
+	}
+
+	missedSubsystems := make([]string, 0, len(requiredSubsystems))
+
+	for _, reqSubsystem := range requiredSubsystems {
+		if _, found := subsystemMounts[reqSubsystem]; !found {
+			missedSubsystems = append(missedSubsystems, reqSubsystem)
+		}
+	}
+
+	if len(missedSubsystems) > 0 {
+		return nil, fmt.Errorf("missing some of the required subsystems: %q", missedSubsystems)
 	}
 
 	return &SubsystemMounts{
