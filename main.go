@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/urfave/cli/v2"
 	"log"
 	"net/http"
@@ -63,7 +64,13 @@ func main() {
 				panic(err)
 			}
 
-			defer logger.Sync()
+			defer func() {
+				err := logger.Sync()
+
+				if err != nil {
+					logger.Error(fmt.Sprintf("error while flushing log buffer: %v", err))
+				}
+			}()
 
 			signalHandler := &resbeat.SignalHandler{}
 			beatApp := resbeat.NewResBeat(ctx)
