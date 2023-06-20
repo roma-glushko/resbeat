@@ -17,7 +17,6 @@ type HTTPError struct {
 }
 
 type ResBeat struct {
-	ctx     context.Context
 	melody  *melody.Melody
 	sig     *SignalHandler
 	monitor *Monitor
@@ -43,7 +42,7 @@ func NewResBeat(ctx context.Context) *ResBeat {
 type ShutdownFunc func() error
 
 func (b *ResBeat) Serve(ctx context.Context, host string, port int, frequency time.Duration) error {
-	logger := telemetry.FromContext(b.ctx)
+	logger := telemetry.FromContext(ctx)
 	beatC := b.monitor.Run(ctx, frequency)
 
 	logger.Info("resbeat is starting")
