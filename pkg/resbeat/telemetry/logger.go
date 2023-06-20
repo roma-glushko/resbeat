@@ -43,21 +43,35 @@ func SetupLogger(ctx context.Context, format LogFormats, level string) (context.
 
 	var core zapcore.Core
 
+	// TODO: validate the format
+
 	switch format {
+	case JsonFormat:
+		config := ecszap.NewDefaultEncoderConfig()
+		core = ecszap.NewCore(config, os.Stdout, logLevel)
 	case PlainFormat:
 		config := zap.NewDevelopmentEncoderConfig()
 		config.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		encoder := zapcore.NewConsoleEncoder(config)
 
 		core = zapcore.NewCore(encoder, os.Stdout, logLevel)
-	case JsonFormat:
-		config := ecszap.NewDefaultEncoderConfig()
-		core = ecszap.NewCore(config, os.Stdout, logLevel)
 	}
 
 	logger = zap.New(core, zap.AddCaller())
 
 	return WithContext(ctx, logger), logger, nil
+}
+
+func UnsetupLogger(ctx context.Context) context.Context {
+	cLogger := FromContext(ctx)
+
+	if cLogger != nil {
+		ctx = context.WithValue(ctx, loggerCtxKey{}, nil)
+	}
+
+	logger = nil
+
+	return ctx
 }
 
 func WithContext(ctx context.Context, logger *zap.Logger) context.Context {
