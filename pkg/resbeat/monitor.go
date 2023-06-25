@@ -169,7 +169,7 @@ func (m *Monitor) collectCPUUsage() (*CPUStats, error) {
 		usageDelta = accumulatedUsageInNanos - prevCPUUsage.AccumulatedUsageInNanos()
 		timeDelta := collectedAt.Nanosecond() - prevCPUUsage.CollectedAt().Nanosecond()
 
-		usagePercentage = float64(usageDelta) / float64(timeDelta) / limitInCores
+		usagePercentage = float64(usageDelta) / float64(timeDelta) / limitInCores / 100.0
 	}
 
 	return &CPUStats{
