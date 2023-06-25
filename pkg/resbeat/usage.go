@@ -3,9 +3,19 @@ package resbeat
 import "time"
 
 type CPUStats struct {
-	UsageInNanos    uint64  `json:"usageInNanos"`
-	LimitInCores    float64 `json:"limitInCors"`
-	UsagePercentage float64 `json:"usagePercentage"`
+	collectedAt             time.Time
+	accumulatedUsageInNanos uint64
+	UsageInNanos            uint64  `json:"usageInNanos"`
+	LimitInCores            float64 `json:"limitInCors"`
+	UsagePercentage         float64 `json:"usagePercentage"`
+}
+
+func (s *CPUStats) CollectedAt() time.Time {
+	return s.collectedAt
+}
+
+func (s *CPUStats) AccumulatedUsageInNanos() uint64 {
+	return s.accumulatedUsageInNanos
 }
 
 type MemoryStats struct {
