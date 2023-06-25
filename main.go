@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/urfave/cli/v2"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"resbeat/pkg/resbeat"
 	"resbeat/pkg/resbeat/telemetry"
+	"syscall"
 	"time"
 )
 
@@ -67,7 +69,8 @@ func main() {
 			defer func() {
 				err := logger.Sync()
 
-				if err != nil {
+				if err != nil && !errors.Is(err, syscall.ENOTTY) {
+					// https://github.com/uber-go/zap/issues/991#issuecomment-962098428
 					logger.Error(fmt.Sprintf("error while flushing log buffer: %v", err))
 				}
 			}()
