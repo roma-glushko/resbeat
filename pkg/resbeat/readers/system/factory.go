@@ -1,8 +1,10 @@
 package system
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"resbeat/pkg/resbeat/telemetry"
 )
 
 var ErrNotAContainer = errors.New("resbeat collects system stats inside a container only")
@@ -16,28 +18,26 @@ type SystemStatsReader interface {
 }
 
 // NewSystemReader
-func NewSystemReader() (*SystemStatsReader, error) {
-	var reader SystemStatsReader
+func NewSystemReader(ctx context.Context) (SystemStatsReader, error) {
+	logger := telemetry.FromContext(ctx)
+	cgroupType, mounts, err := getCGroupMounts(procMountsPath)
 
-	//reader, err := NewCGroupV2Reader()
-	//
-	//if err == nil {
-	//	return reader, nil
-	//}
-	//
-	//if err != nil && !errors.Is(err, ErrCGroupNotSupported) {
-	//	return nil, fmt.Errorf("faild to read cgroupv2 controller: %w", err)
-	//}
-
-	reader, err := NewCGroupV1Reader()
-
-	if err == nil {
-		return &reader, nil
-	}
-
-	if err != nil && errors.Is(err, ErrCGroupNotSupported) {
+	if cgroupType == CGroupUnknown {
 		return nil, ErrNotAContainer
 	}
 
-	return nil, fmt.Errorf("faild to read cgroupv1 controller: %w", err)
+	logger.Info(fmt.Sprintf("found system controller: %s", cgroupType))
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to init %s controller: %v", cgroupType, err)
+	}
+
+	switch cgroupType {
+	case CGroupV2:
+		return NewCGroupV2Reader(mounts.GetRootDir()), nil
+	case CGroupV1:
+		return NewCGroupV1Reader(mounts), nil
+	}
+
+	panic("cgroup controller should have been processed")
 }

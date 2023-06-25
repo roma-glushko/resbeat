@@ -17,7 +17,7 @@ lint: # Lint the source code
 image:
 	@docker build --tag romahlushko/resbeat .
 
-tests: ## Run all tests
+test: ## Run all tests
 	@go test -v -count=1 -race -shuffle=on -coverprofile=coverage.txt ./...
 
 benchmark: ## Run built-in benchmarks

@@ -1,22 +1,15 @@
 package system
 
 import (
-	"bufio"
 	"bytes"
-	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
-var ErrCGroupNotSupported = errors.New("cgroup version is not supported")
-
 const (
-	procMountsPath         string = "/proc/mounts"
 	memorySubsystem        string = "memory"
 	cpuSubsystem           string = "cpu"
 	cpuAccountingSubsystem string = "cpuacct"
@@ -30,95 +23,20 @@ var requiredSubsystems = [...]string{
 
 var mountSplitter = regexp.MustCompile(`\s+`)
 
-type SubsystemMounts struct {
-	subsystemMounts map[string]string
-}
-
-func (s *SubsystemMounts) GetMemoryPath() string {
+func (s *CgroupMounts) GetMemoryPath() string {
 	return s.subsystemMounts[memorySubsystem]
 }
 
-func (s *SubsystemMounts) GetCPUPath() string {
+func (s *CgroupMounts) GetCPUPath() string {
 	return s.subsystemMounts[cpuSubsystem]
 }
 
-func (s *SubsystemMounts) GetCPUAccountingPath() string {
+func (s *CgroupMounts) GetCPUAccountingPath() string {
 	return s.subsystemMounts[cpuAccountingSubsystem]
 }
 
-func getSubsystemsMounts(mountsPath string) (*SubsystemMounts, error) {
-	procMount, err := os.Open(mountsPath)
-
-	if err != nil {
-		return nil, fmt.Errorf("reading mounts file failed: %v", err)
-	}
-
-	scanner := bufio.NewScanner(procMount)
-
-	subsystemMounts := map[string]string{}
-
-	for scanner.Scan() {
-		mountInfo := mountSplitter.Split(scanner.Text(), -1)
-
-		if len(mountInfo) < 6 {
-			// a broken line, skipping it
-			continue
-		}
-
-		fsType, mountPath := mountInfo[2], mountInfo[1]
-
-		if !strings.Contains(fsType, "cgroup") {
-			continue
-		}
-
-		if strings.Contains(fsType, "cgroup2") {
-			// we are dealing with newer version of cgroups
-			_ = procMount.Close()
-			return nil, ErrCGroupNotSupported
-		}
-
-		pathParts := strings.Split(mountPath, "/")
-
-		subsystemMountParts := pathParts[:len(pathParts)-1]
-		subsystemNames := strings.Split(pathParts[len(pathParts)-1], ",")
-		mountPartsLen := len(subsystemMountParts)
-
-		for _, subsystem := range subsystemNames {
-			for _, requiredSubsystem := range requiredSubsystems {
-				if subsystem == requiredSubsystem {
-					subsystemPath := make([]string, mountPartsLen, mountPartsLen+1)
-					copy(subsystemPath, subsystemMountParts)
-					subsystemPath = append(subsystemPath, subsystem)
-					subsystemPath[0] = string(filepath.Separator)
-
-					subsystemMounts[subsystem] = filepath.Join(subsystemPath...)
-
-					break
-				}
-			}
-		}
-
-	}
-
-	missedSubsystems := make([]string, 0, len(requiredSubsystems))
-
-	for _, reqSubsystem := range requiredSubsystems {
-		if _, found := subsystemMounts[reqSubsystem]; !found {
-			missedSubsystems = append(missedSubsystems, reqSubsystem)
-		}
-	}
-
-	if len(missedSubsystems) > 0 {
-		return nil, fmt.Errorf("missing some of the required subsystems: %q", missedSubsystems)
-	}
-
-	return &SubsystemMounts{
-		subsystemMounts: subsystemMounts,
-	}, procMount.Close()
-}
-
 type CGroupV1Reader struct {
-	subsystemMounts *SubsystemMounts
+	subsystemMounts *CgroupMounts
 }
 
 func (r *CGroupV1Reader) getStat(statFilePath string) (uint64, error) {
@@ -159,13 +77,13 @@ func (r *CGroupV1Reader) GetMemoryLimitInBytes() (uint64, error) {
 }
 
 func (r *CGroupV1Reader) GetCPUUsageLimitInCores() (float64, error) {
-	cpuQuota, err := r.GetCPUQuotaInMicros()
+	cpuQuota, err := r.getCPUQuotaInMicros()
 
 	if err != nil {
 		return 0, err
 	}
 
-	cpuPeriod, err := r.GetCPUPeriodInMicros()
+	cpuPeriod, err := r.getCPUPeriodInMicros()
 
 	if err != nil {
 		return 0, err
@@ -178,22 +96,16 @@ func (r *CGroupV1Reader) GetCPUUsageInNanos() (uint64, error) {
 	return r.getStat(filepath.Join(r.subsystemMounts.GetCPUAccountingPath(), "cpuacct.usage"))
 }
 
-func (r *CGroupV1Reader) GetCPUQuotaInMicros() (uint64, error) {
+func (r *CGroupV1Reader) getCPUQuotaInMicros() (uint64, error) {
 	return r.getStat(filepath.Join(r.subsystemMounts.GetCPUPath(), "cpu.cfs_quota_us"))
 }
 
-func (r *CGroupV1Reader) GetCPUPeriodInMicros() (uint64, error) {
+func (r *CGroupV1Reader) getCPUPeriodInMicros() (uint64, error) {
 	return r.getStat(filepath.Join(r.subsystemMounts.GetCPUPath(), "cpu.cfs_period_us"))
 }
 
-func NewCGroupV1Reader() (*CGroupV1Reader, error) {
-	subsystemMounts, err := getSubsystemsMounts(procMountsPath)
-
-	if err != nil {
-		return nil, err
-	}
-
+func NewCGroupV1Reader(cgroupMounts *CgroupMounts) *CGroupV1Reader {
 	return &CGroupV1Reader{
-		subsystemMounts: subsystemMounts,
-	}, nil
+		subsystemMounts: cgroupMounts,
+	}
 }
