@@ -3,6 +3,7 @@ package resbeat
 import (
 	"context"
 	"fmt"
+	"math"
 	"resbeat/pkg/resbeat/readers/system"
 	"resbeat/pkg/resbeat/telemetry"
 	"sync"
@@ -104,6 +105,12 @@ func (m *Monitor) collectSystemUsage(ctx context.Context) *SystemStats {
 	}
 }
 
+func (m *Monitor) clampPercentage(value float64) float64 {
+	minRange, maxRange := 0.0, 1.0
+
+	return math.Max(minRange, math.Min(value, maxRange))
+}
+
 func (m *Monitor) collectMemoryUsage() (*MemoryStats, error) {
 	if m.reader == nil {
 		return nil, nil
@@ -126,7 +133,7 @@ func (m *Monitor) collectMemoryUsage() (*MemoryStats, error) {
 	return &MemoryStats{
 		UsageInBytes:    memoryUsageInBytes,
 		LimitInBytes:    memoryLimitInBytes,
-		UsagePercentage: float64(memoryUsageInBytes) / float64(memoryLimitInBytes),
+		UsagePercentage: m.clampPercentage(float64(memoryUsageInBytes) / float64(memoryLimitInBytes)),
 	}, nil
 }
 
@@ -136,7 +143,7 @@ func (m *Monitor) collectCPUUsage() (*CPUStats, error) {
 	}
 
 	systemReader := *m.reader
-	prevCPUUsage := m.prevUsage
+	prevUsage := m.prevUsage
 
 	var usagePercentage float64
 	var usageDelta uint64
@@ -147,25 +154,29 @@ func (m *Monitor) collectCPUUsage() (*CPUStats, error) {
 		return nil, err
 	}
 
-	usageInNanos, err := systemReader.GetCPUUsageInNanos()
+	collectedAt := time.Now().UTC()
+	accumulatedUsageInNanos, err := systemReader.GetCPUUsageInNanos()
 
 	if err != nil {
 		return nil, err
 	}
 
-	if prevCPUUsage == nil {
+	if prevUsage == nil {
 		usagePercentage = 0.0
-		usageDelta = usageInNanos
+		usageDelta = accumulatedUsageInNanos
 	} else {
-		usageDelta = usageInNanos - prevCPUUsage.System.CPU.UsageInNanos
-		timeDelta := time.Now().UTC().Nanosecond() - prevCPUUsage.CollectedAt.Nanosecond()
+		prevCPUUsage := prevUsage.System.CPU
+		usageDelta = accumulatedUsageInNanos - prevCPUUsage.AccumulatedUsageInNanos()
+		timeDelta := collectedAt.Nanosecond() - prevCPUUsage.CollectedAt().Nanosecond()
 
-		usagePercentage = float64(usageDelta) / float64(timeDelta) / limitInCores / 100.0
+		usagePercentage = float64(usageDelta) / float64(timeDelta) / limitInCores
 	}
 
 	return &CPUStats{
-		LimitInCores:    limitInCores,
-		UsageInNanos:    usageDelta,
-		UsagePercentage: usagePercentage,
+		collectedAt:             collectedAt,
+		accumulatedUsageInNanos: accumulatedUsageInNanos,
+		LimitInCores:            limitInCores,
+		UsageInNanos:            usageDelta,
+		UsagePercentage:         m.clampPercentage(usagePercentage),
 	}, nil
 }
