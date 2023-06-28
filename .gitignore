@@ -2,3 +2,4 @@
 
 dist/
 benchmarks/
+coverage.out

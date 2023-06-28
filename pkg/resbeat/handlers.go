@@ -25,7 +25,7 @@ type ResBeat struct {
 
 func NewResBeat(ctx context.Context) *ResBeat {
 	logger := telemetry.FromContext(ctx)
-	systemReader, err := system.NewSystemReader()
+	systemReader, err := system.NewSystemReader(ctx)
 
 	if err != nil {
 		logger.Error(fmt.Sprintf("could not init a system stat reader: %v", err))
