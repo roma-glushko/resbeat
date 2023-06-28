@@ -3,7 +3,9 @@ package resbeat
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"math"
+	"reflect"
 	"resbeat/pkg/resbeat/readers/system"
 	"resbeat/pkg/resbeat/telemetry"
 	"sync"
@@ -11,24 +13,26 @@ import (
 )
 
 type Monitor struct {
-	reader    *system.SystemStatsReader
-	mtx       *sync.RWMutex
+	reader    system.SystemStatsReader
+	mu        *sync.RWMutex
 	prevUsage *Usage
 	usage     *Usage
+	wg        *sync.WaitGroup
 }
 
-func NewMonitor(reader *system.SystemStatsReader) *Monitor {
+func NewMonitor(reader system.SystemStatsReader) *Monitor {
 	return &Monitor{
 		reader:    reader,
-		mtx:       &sync.RWMutex{},
+		mu:        &sync.RWMutex{},
 		prevUsage: nil,
 		usage:     nil,
+		wg:        &sync.WaitGroup{},
 	}
 }
 
 func (w *Monitor) Usage() *Usage {
-	w.mtx.RLock()
-	defer w.mtx.RUnlock()
+	w.mu.RLock()
+	defer w.mu.RUnlock()
 
 	return w.usage
 }
@@ -36,6 +40,8 @@ func (w *Monitor) Usage() *Usage {
 func (m *Monitor) Run(ctx context.Context, frequency time.Duration) <-chan bool {
 	logger := telemetry.FromContext(ctx)
 	beat := make(chan bool)
+
+	m.wg.Add(1)
 
 	go func() {
 		timer := time.NewTicker(frequency)
@@ -45,6 +51,7 @@ func (m *Monitor) Run(ctx context.Context, frequency time.Duration) <-chan bool 
 
 			timer.Stop()
 			close(beat)
+			m.wg.Done()
 		}()
 
 		// init the usage stats on resbeat's startup
@@ -55,18 +62,22 @@ func (m *Monitor) Run(ctx context.Context, frequency time.Duration) <-chan bool 
 			case <-ctx.Done():
 				return
 			case <-timer.C:
-				usage := m.collectCurrentUsage(ctx)
-
-				m.mtx.Lock()
-				m.usage, m.prevUsage = usage, m.usage
-				m.mtx.Unlock()
-
+				m.collectUsageOnTick(ctx)
 				beat <- true
 			}
 		}
 	}()
 
 	return beat
+}
+
+func (m *Monitor) collectUsageOnTick(ctx context.Context) {
+	m.prevUsage = m.usage
+	usage := m.collectCurrentUsage(ctx)
+
+	m.mu.Lock()
+	m.usage = usage
+	m.mu.Unlock()
 }
 
 func (m *Monitor) collectCurrentUsage(ctx context.Context) *Usage {
@@ -82,12 +93,12 @@ func (m *Monitor) collectSystemUsage(ctx context.Context) *SystemStats {
 	logger := telemetry.FromContext(ctx)
 	systemReader := m.reader
 
-	if systemReader == nil {
+	if systemReader == nil || reflect.ValueOf(systemReader).IsNil() {
 		// the system reader was not inited successfully
 		return nil
 	}
 
-	cpuUsage, err := m.collectCPUUsage()
+	cpuUsage, err := m.collectCPUUsage(ctx)
 
 	if err != nil {
 		logger.Error(fmt.Sprintf("error during collecting CPU stats: %v (usage data will be skipped)", err))
@@ -116,15 +127,15 @@ func (m *Monitor) collectMemoryUsage() (*MemoryStats, error) {
 		return nil, nil
 	}
 
-	systemReader := *m.reader
+	systemReader := m.reader
 
-	memoryUsageInBytes, err := systemReader.GetMemoryUsageInBytes()
+	memoryUsageInBytes, err := systemReader.MemoryUsageInBytes()
 
 	if err != nil {
 		return nil, err
 	}
 
-	memoryLimitInBytes, err := systemReader.GetMemoryLimitInBytes()
+	memoryLimitInBytes, err := systemReader.MemoryLimitInBytes()
 
 	if err != nil {
 		return nil, err
@@ -137,40 +148,54 @@ func (m *Monitor) collectMemoryUsage() (*MemoryStats, error) {
 	}, nil
 }
 
-func (m *Monitor) collectCPUUsage() (*CPUStats, error) {
+func (m *Monitor) collectCPUUsage(ctx context.Context) (*CPUStats, error) {
+	logger := telemetry.FromContext(ctx)
+
 	if m.reader == nil {
 		return nil, nil
 	}
 
-	systemReader := *m.reader
+	systemReader := m.reader
 	prevUsage := m.prevUsage
 
 	var usagePercentage float64
 	var usageDelta uint64
+	var timeDelta int64
 
-	limitInCores, err := systemReader.GetCPUUsageLimitInCores()
+	limitInCores, err := systemReader.CPUUsageLimitInCores()
 
 	if err != nil {
 		return nil, err
 	}
 
 	collectedAt := time.Now().UTC()
-	accumulatedUsageInNanos, err := systemReader.GetCPUUsageInNanos()
+	accumulatedUsageInNanos, err := systemReader.CPUUsageInNanos()
 
 	if err != nil {
 		return nil, err
 	}
 
 	if prevUsage == nil {
+		logger.Debug("no previous CPU usage report")
 		usagePercentage = 0.0
 		usageDelta = accumulatedUsageInNanos
 	} else {
 		prevCPUUsage := prevUsage.System.CPU
 		usageDelta = accumulatedUsageInNanos - prevCPUUsage.AccumulatedUsageInNanos()
-		timeDelta := collectedAt.Nanosecond() - prevCPUUsage.CollectedAt().Nanosecond()
+		timeDelta = collectedAt.Sub(prevCPUUsage.CollectedAt()).Nanoseconds()
 
 		usagePercentage = float64(usageDelta) / float64(timeDelta) / limitInCores
+		// 3-06-28T13:37:31.770Z        DEBUG   resbeat/monitor.go:191  CPU report      {"limitInCores": 0.5, "accumulatedUsage": 29133460000, "usageDelta": 1503878000, "timeDelta": 3000259608, "usagePercentage": 1.0024985811161178}
 	}
+
+	logger.Debug(
+		"CPU report",
+		zap.Float64("limitInCores", limitInCores),
+		zap.Uint64("accumulatedUsage", accumulatedUsageInNanos),
+		zap.Uint64("usageDelta", usageDelta),
+		zap.Int64("timeDelta", timeDelta),
+		zap.Float64("usagePercentage", usagePercentage),
+	)
 
 	return &CPUStats{
 		collectedAt:             collectedAt,
