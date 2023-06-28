@@ -71,3 +71,15 @@ func TestMonitor_ErrorToInitSystemReader(t *testing.T) {
 	assert.NotNil(t, usage.CollectedAt)
 	assert.Nil(t, usage.System)
 }
+
+func BenchmarkMonitor_CGroupV2UsageCollection(b *testing.B) {
+	ctx := context.Background()
+	reader := system.NewCGroupV2Reader("../../../../tests/fixtures/cgroupv2")
+	monitor := NewMonitor(reader)
+
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		monitor.collectUsageOnTick(ctx)
+	}
+}
