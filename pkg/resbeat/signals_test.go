@@ -39,7 +39,7 @@ func TestSignalHandler_ExitOnCtxCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	sigHandler := NewSignalHandler()
 
-	ctx = sigHandler.Handle(ctx)
+	_ = sigHandler.Handle(ctx)
 	cancel()
 
 	sigHandler.wg.Wait()
