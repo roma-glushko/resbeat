@@ -38,5 +38,5 @@ func TestCGroupV2_ReadCPUUsage(t *testing.T) {
 	stat, err := reader.CPUUsageInNanos()
 
 	assert.Nil(t, err)
-	assert.Equal(t, uint64(1084617), stat)
+	assert.Equal(t, uint64(1084617000), stat)
 }
