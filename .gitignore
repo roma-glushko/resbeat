@@ -2,4 +2,4 @@
 
 dist/
 benchmarks/
-coverage.txt
+coverage.out

@@ -68,15 +68,15 @@ func (r *CGroupV1Reader) getStat(statFilePath string) (uint64, error) {
 	return statValue, statFile.Close()
 }
 
-func (r *CGroupV1Reader) GetMemoryUsageInBytes() (uint64, error) {
+func (r *CGroupV1Reader) MemoryUsageInBytes() (uint64, error) {
 	return r.getStat(filepath.Join(r.subsystemMounts.GetMemoryPath(), "memory.usage_in_bytes"))
 }
 
-func (r *CGroupV1Reader) GetMemoryLimitInBytes() (uint64, error) {
+func (r *CGroupV1Reader) MemoryLimitInBytes() (uint64, error) {
 	return r.getStat(filepath.Join(r.subsystemMounts.GetMemoryPath(), "memory.limit_in_bytes"))
 }
 
-func (r *CGroupV1Reader) GetCPUUsageLimitInCores() (float64, error) {
+func (r *CGroupV1Reader) CPUUsageLimitInCores() (float64, error) {
 	cpuQuota, err := r.getCPUQuotaInMicros()
 
 	if err != nil {
@@ -92,7 +92,7 @@ func (r *CGroupV1Reader) GetCPUUsageLimitInCores() (float64, error) {
 	return float64(cpuQuota) / float64(cpuPeriod), nil
 }
 
-func (r *CGroupV1Reader) GetCPUUsageInNanos() (uint64, error) {
+func (r *CGroupV1Reader) CPUUsageInNanos() (uint64, error) {
 	return r.getStat(filepath.Join(r.subsystemMounts.GetCPUAccountingPath(), "cpuacct.usage"))
 }
 

@@ -71,8 +71,8 @@ func (r *CGroupV2Reader) getStatMap(statFilePath string) (statMap map[string]uin
 	defer func() {
 		fileErr := statFile.Close()
 
-		if fileErr != nil {
-			// TODO: return the error somehow
+		if fileErr != nil && err == nil {
+			err = fileErr
 		}
 	}()
 
@@ -141,19 +141,19 @@ func (r *CGroupV2Reader) getCPULimits(statFilePath string) (quota, period uint64
 	return quota, period, nil
 }
 
-func (r *CGroupV2Reader) GetMemoryUsageInBytes() (uint64, error) {
+func (r *CGroupV2Reader) MemoryUsageInBytes() (uint64, error) {
 	statFilePath := filepath.Join(r.rootDir, memoryUsageInBytes)
 
 	return r.getStat(statFilePath)
 }
 
-func (r *CGroupV2Reader) GetMemoryLimitInBytes() (uint64, error) {
+func (r *CGroupV2Reader) MemoryLimitInBytes() (uint64, error) {
 	statFilePath := filepath.Join(r.rootDir, memoryLimitInBytes)
 
 	return r.getStat(statFilePath)
 }
 
-func (r *CGroupV2Reader) GetCPUUsageLimitInCores() (usage float64, err error) {
+func (r *CGroupV2Reader) CPUUsageLimitInCores() (usage float64, err error) {
 	statFilePath := filepath.Join(r.rootDir, cpuLimits)
 	quota, period, err := r.getCPULimits(statFilePath)
 
@@ -168,7 +168,8 @@ func (r *CGroupV2Reader) GetCPUUsageLimitInCores() (usage float64, err error) {
 	return float64(quota) / float64(period), nil
 }
 
-func (r *CGroupV2Reader) GetCPUUsageInNanos() (uint64, error) {
+func (r *CGroupV2Reader) CPUUsageInNanos() (uint64, error) {
+	micro_to_nano := uint64(1000)
 	statFilePath := filepath.Join(r.rootDir, cpuUsage)
 	stats, err := r.getStatMap(statFilePath)
 
@@ -176,13 +177,13 @@ func (r *CGroupV2Reader) GetCPUUsageInNanos() (uint64, error) {
 		return 0, fmt.Errorf("failed to read CPU usage: %v", err)
 	}
 
-	usage, found := stats["usage_usec"]
+	usage, found := stats["usage_usec"] // microseconds
 
 	if !found {
 		return 0, fmt.Errorf("did not found CPU usage (usage_usec) in %v", stats)
 	}
 
-	return usage, nil
+	return usage * micro_to_nano, nil
 }
 
 func NewCGroupV2Reader(rootDir string) *CGroupV2Reader {

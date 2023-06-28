@@ -15,9 +15,10 @@ FROM alpine:3.18 AS release
 
 WORKDIR /service
 
+RUN apk add --upgrade stress-ng
 COPY --from=build /service/resbeat /service/resbeat
 
 EXPOSE 8000
 
 # Run
-ENTRYPOINT ["/service/resbeat", "--host", "0.0.0.0"]
+ENTRYPOINT ["/service/resbeat", "--host", "0.0.0.0", "--log-level", "debug"]

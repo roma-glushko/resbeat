@@ -11,10 +11,10 @@ var ErrNotAContainer = errors.New("resbeat collects system stats inside a contai
 
 // SystemStatsReader represents components that reads resource stats from different resource controllers
 type SystemStatsReader interface {
-	GetMemoryUsageInBytes() (uint64, error)
-	GetMemoryLimitInBytes() (uint64, error)
-	GetCPUUsageLimitInCores() (float64, error)
-	GetCPUUsageInNanos() (uint64, error)
+	MemoryUsageInBytes() (uint64, error)
+	MemoryLimitInBytes() (uint64, error)
+	CPUUsageLimitInCores() (float64, error)
+	CPUUsageInNanos() (uint64, error)
 }
 
 // NewSystemReader

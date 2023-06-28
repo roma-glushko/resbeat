@@ -1,7 +1,6 @@
 package system
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -52,5 +51,5 @@ func TestCGroupV1_MountsFileNotFound(t *testing.T) {
 
 	assert.Equal(t, CGroupUnknown, cgroupType)
 	assert.Nil(t, foundMounts)
-	assert.ErrorContains(t, err, fmt.Sprintf("failed to read"))
+	assert.ErrorContains(t, err, "failed to read")
 }

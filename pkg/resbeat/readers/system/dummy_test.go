@@ -10,16 +10,16 @@ func TestDummySystemReader_GetMemoryStats(t *testing.T) {
 	memLim := uint64(2500000)
 
 	reader := DummyStatsReader{
-		MemoryUsageInBytes: memUsage,
-		MemoryLimitInBytes: memLim,
+		memoryUsageInBytes: memUsage,
+		memoryLimitInBytes: memLim,
 	}
 
-	stat, err := reader.GetMemoryUsageInBytes()
+	stat, err := reader.MemoryUsageInBytes()
 
 	assert.Nil(t, err)
 	assert.Equal(t, memUsage, stat)
 
-	stat, err = reader.GetMemoryLimitInBytes()
+	stat, err = reader.MemoryLimitInBytes()
 
 	assert.Nil(t, err)
 	assert.Equal(t, memLim, stat)
@@ -30,16 +30,16 @@ func TestDummySystemReader_GetCPUStats(t *testing.T) {
 	lim := 2.0
 
 	reader := DummyStatsReader{
-		CPUUsageInNano:  usage,
-		CPULimitInCores: lim,
+		cpuUsageInNano:  usage,
+		cpuLimitInCores: lim,
 	}
 
-	stat, err := reader.GetCPUUsageInNanos()
+	stat, err := reader.CPUUsageInNanos()
 
 	assert.Nil(t, err)
 	assert.Equal(t, usage, stat)
 
-	limStat, err := reader.GetCPUUsageLimitInCores()
+	limStat, err := reader.CPUUsageLimitInCores()
 
 	assert.Nil(t, err)
 	assert.Equal(t, lim, limStat)

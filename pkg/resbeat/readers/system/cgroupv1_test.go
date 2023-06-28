@@ -15,12 +15,12 @@ func TestCGroupV1_ReadValues(t *testing.T) {
 	}
 
 	reader := NewCGroupV1Reader(mounts)
-	stat, err := reader.GetMemoryLimitInBytes()
+	stat, err := reader.MemoryLimitInBytes()
 
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(268435456), stat)
 
-	stat, err = reader.GetMemoryUsageInBytes()
+	stat, err = reader.MemoryUsageInBytes()
 
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(1998848), stat)
