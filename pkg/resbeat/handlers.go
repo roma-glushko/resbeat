@@ -33,7 +33,7 @@ func NewResBeat(ctx context.Context) *ResBeat {
 
 	return &ResBeat{
 		melody:  melody.New(),
-		sig:     &SignalHandler{},
+		sig:     NewSignalHandler(),
 		monitor: NewMonitor(systemReader),
 		encoder: &json.Encoder{},
 	}
