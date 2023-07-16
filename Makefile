@@ -1,3 +1,4 @@
+GOOS?=darwin
 COMMIT ?= $(shell git describe --dirty --long --always)
 VERSION := $(shell cat ./VERSION)
 LDFLAGS_COMMON := -X main.commitSha=$(COMMIT) -X main.version=$(VERSION) -s -w
@@ -8,10 +9,10 @@ run: ##
 	@go run main.go
 
 build: ## Build a binary
-	@GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS_COMMON)" -o ./dist/resbeat
+	@GOARCH=amd64 go build -ldflags "$(LDFLAGS_COMMON)" -o ./dist/resbeat
 
 build-debug: ## Build with outputting compliler's notes
-	@GOOS=darwin GOARCH=amd64 go build -gcflags "-m=2" -o ./dist/resbeat
+	@GOARCH=amd64 go build -gcflags "-m=2" -o ./dist/resbeat
 
 lint: # Lint the source code
 	@echo "🧹 Vetting go.mod.."
@@ -23,6 +24,9 @@ lint: # Lint the source code
 
 image:
 	@docker build --tag romahlushko/resbeat .
+
+image-gpu-build:
+	@docker build --tag romahlushko/resbeat-gpu -f gpu.Dockerfile .
 
 test: ## Run all tests
 	@go test -v -count=1 -race -shuffle=on -covermode=atomic -coverprofile=coverage.out ./...
@@ -38,3 +42,7 @@ release-local:  # Perform all artifacts building locally without releasing them 
 
 sandbox: image
 	@docker run -p 8000:8000 --cpus="0.5" --memory="150m" --name resbeat-sandbox -d romahlushko/resbeat:latest
+
+build-gpu: image-gpu-build
+	@docker run --rm -v "$(PWD)":/service -w /service -e GOOS=linux romahlushko/resbeat-gpu make build
+

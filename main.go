@@ -51,6 +51,11 @@ func main() {
 				Name:  "frequency",
 				Value: 3 * time.Second,
 			},
+			&cli.BoolFlag{
+				Name:  "gpu",
+				Value: false,
+				Usage: "collect GPU metrics? (NVML should be installed)",
+			},
 		},
 		Action: func(cCtx *cli.Context) error {
 			host := cCtx.String("host")
@@ -58,6 +63,7 @@ func main() {
 			logLevel := cCtx.String("log-level")
 			logFormat := cCtx.String("log-format")
 			frequency := cCtx.Duration("frequency")
+			gpuSupport := cCtx.Bool("gpu")
 
 			ctx := context.Background()
 			ctx, logger, err := telemetry.SetupLogger(ctx, logFormat, logLevel)
@@ -76,7 +82,7 @@ func main() {
 			}()
 
 			signalHandler := &resbeat.SignalHandler{}
-			beatApp := resbeat.NewResBeat(ctx)
+			beatApp := resbeat.NewResBeat(ctx, gpuSupport)
 			ctx = signalHandler.Handle(ctx)
 
 			if err := beatApp.Serve(ctx, host, port, frequency); err != http.ErrServerClosed {

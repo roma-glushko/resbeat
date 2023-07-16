@@ -1,9 +1,6 @@
-package resbeat
+package system
 
-import (
-	"resbeat/pkg/resbeat/readers/gpu"
-	"time"
-)
+import "time"
 
 type CPUStats struct {
 	collectedAt             time.Time
@@ -30,15 +27,4 @@ type MemoryStats struct {
 type SystemStats struct {
 	CPU    *CPUStats    `json:"cpu,omitempty"`
 	Memory *MemoryStats `json:"memory"`
-}
-
-type DiskStats struct {
-	// TODO: implement
-}
-
-type Usage struct {
-	CollectedAt time.Time             `json:"collectedAt"`
-	System      *SystemStats          `json:"system"`
-	GPUs        *gpu.AllGPUStats      `json:"gpus,omitempty"`
-	Disks       *map[string]DiskStats `json:"disks,omitempty"`
 }

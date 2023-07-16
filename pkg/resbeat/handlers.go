@@ -7,6 +7,7 @@ import (
 	"github.com/olahol/melody"
 	"go.uber.org/zap"
 	"net/http"
+	"resbeat/pkg/resbeat/readers/gpu"
 	"resbeat/pkg/resbeat/readers/system"
 	"resbeat/pkg/resbeat/telemetry"
 	"time"
@@ -23,18 +24,29 @@ type ResBeat struct {
 	encoder *json.Encoder
 }
 
-func NewResBeat(ctx context.Context) *ResBeat {
+func NewResBeat(ctx context.Context, gpuSupport bool) *ResBeat {
 	logger := telemetry.FromContext(ctx)
 	systemReader, err := system.NewSystemReader(ctx)
 
 	if err != nil {
-		logger.Error(fmt.Sprintf("could not init a system stat reader: %v", err))
+		logger.Error(fmt.Sprintf("could not init a system stats reader: %v", err))
+		// TODO: halt execution completely
+	}
+
+	var gpuReader *gpu.GPUReader
+
+	if gpuSupport {
+		gpuReader, err = gpu.NewGPUReader()
+
+		if err != nil {
+			logger.Error(fmt.Sprintf("could not init a GPU stats reader: %v", err))
+		}
 	}
 
 	return &ResBeat{
 		melody:  melody.New(),
 		sig:     NewSignalHandler(),
-		monitor: NewMonitor(systemReader),
+		monitor: NewMonitor(systemReader, gpuReader),
 		encoder: &json.Encoder{},
 	}
 }
