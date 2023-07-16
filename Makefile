@@ -25,8 +25,8 @@ lint: # Lint the source code
 image:
 	@docker build --tag romahlushko/resbeat .
 
-image-gpu-build:
-	@docker build --tag romahlushko/resbeat-gpu -f gpu.Dockerfile .
+image-build:
+	@docker build --tag romahlushko/resbeat-build -f build.Dockerfile .
 
 test: ## Run all tests
 	@go test -v -count=1 -race -shuffle=on -covermode=atomic -coverprofile=coverage.out ./...
@@ -43,6 +43,5 @@ release-local:  # Perform all artifacts building locally without releasing them 
 sandbox: image
 	@docker run -p 8000:8000 --cpus="0.5" --memory="150m" --name resbeat-sandbox -d romahlushko/resbeat:latest
 
-build-gpu: image-gpu-build
-	@docker run --rm -v "$(PWD)":/service -w /service -e GOOS=linux romahlushko/resbeat-gpu make build
-
+linux-%: image-build
+	@docker run --rm -v "$(PWD)":/service -w /service -e GOOS=linux romahlushko/resbeat-build:latest make $*

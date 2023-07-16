@@ -75,13 +75,13 @@ func main() {
 			defer func() {
 				err := logger.Sync()
 
-				if err != nil && !errors.Is(err, syscall.ENOTTY) {
+				if err != nil && !errors.Is(err, syscall.ENOTTY) && !errors.Is(err, syscall.EINVAL) {
 					// https://github.com/uber-go/zap/issues/991#issuecomment-962098428
 					logger.Error(fmt.Sprintf("error while flushing log buffer: %v", err))
 				}
 			}()
 
-			signalHandler := &resbeat.SignalHandler{}
+			signalHandler := resbeat.NewSignalHandler()
 			beatApp := resbeat.NewResBeat(ctx, gpuSupport)
 			ctx = signalHandler.Handle(ctx)
 
