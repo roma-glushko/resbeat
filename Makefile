@@ -5,7 +5,7 @@ CGO_ENABLED?=0
 CLI_VERSION_PACKAGE := main
 COMMIT ?= $(shell git describe --dirty --long --always --abbrev=15)
 VERSION := $(shell cat ./VERSION)
-CGO_LDFLAGS_ALLOW := "-Wl,--unresolved-symbols=ignore-in-object-files" # -ldl -Wl,-undefined,dynamic_lookup
+CGO_LDFLAGS_ALLOW := "-Wl,--unresolved-symbols=ignore-in-object-files"
 LDFLAGS_COMMON := "-s -w -X $(CLI_VERSION_PACKAGE).commitSha=$(COMMIT) -X $(CLI_VERSION_PACKAGE).version=$(VERSION)"
 
 run: ## Run the app
@@ -14,11 +14,11 @@ run: ## Run the app
 	@go run main.go
 
 build: ## Build a binary
-	CGO_LDFLAGS_ALLOW=$(CGO_LDFLAGS_ALLOW) GOOS=$(GOOS) GOARCH=$(GOARCH) \
+	@CGO_LDFLAGS_ALLOW=$(CGO_LDFLAGS_ALLOW) CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) \
 		go build -ldflags $(LDFLAGS_COMMON) -o ./dist/resbeat
 
 build-debug: ## Build with outputting compliler's notes
-	@CGO_LDFLAGS_ALLOW=$(CGO_LDFLAGS_ALLOW) GOOS=$(GOOS) GOARCH=$(GOARCH) \
+	@CGO_LDFLAGS_ALLOW=$(CGO_LDFLAGS_ALLOW) CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) \
 		go build -ldflags $(LDFLAGS_COMMON) -gcflags "-m=2" -o ./dist/resbeat
 
 lint: # Lint the source code
@@ -41,10 +41,10 @@ image-build:
 COVERAGE_FILE ?= coverage.out
 
 test: ## Run all tests
-	@go test -v -count=1 -race -shuffle=on -covermode=atomic -coverprofile=$(COVERAGE_FILE) ./...
+	@CGO_ENABLED=$(CGO_ENABLED) go test -v -count=1 -race -shuffle=on -covermode=atomic -coverprofile=$(COVERAGE_FILE) ./...
 
 test-coverage:
-	@go tool cover -html=$(COVERAGE_FILE)
+	@CGO_ENABLED=$(CGO_ENABLED) go tool cover -html=$(COVERAGE_FILE)
 
 benchmark: ## Run built-in benchmarks
 	@go test -v -shuffle=on -run=- -bench=. -benchtime=1x ./...

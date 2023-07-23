@@ -85,9 +85,14 @@ func (m *Monitor) collectUsageOnTick(ctx context.Context) {
 
 func (m *Monitor) collectCurrentUsage(ctx context.Context) *Usage {
 	var gpuStats *gpu.AllGPUStats
+	var err error
+
+	logger := telemetry.FromContext(ctx)
 
 	if m.gpuReader != nil {
-		gpuStats = m.gpuReader.GPUStats()
+		gpuStats, err = m.gpuReader.GPUStats()
+
+		logger.Error(fmt.Sprintf("error during collecting GPU metrics: %v", err))
 	}
 
 	currentUsage := Usage{

@@ -1,3 +1,6 @@
+//go:build linux
+// +build linux
+
 package gpu
 
 import (
@@ -19,11 +22,11 @@ func (*GPUReader) Init() error {
 	return nil
 }
 
-func (*GPUReader) GPUStats() *AllGPUStats {
+func (*GPUReader) GPUStats() (*AllGPUStats, error) {
 	count, result := nvml.DeviceGetCount()
 
 	if result != nvml.SUCCESS {
-		log.Fatalf("Unable to get device count: %v", nvml.ErrorString(result))
+		return nil, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
 	}
 
 	stats := make(map[string]GPUStats, count)
@@ -32,25 +35,25 @@ func (*GPUReader) GPUStats() *AllGPUStats {
 		device, result := nvml.DeviceGetHandleByIndex(i)
 
 		if result != nvml.SUCCESS {
-			log.Fatalf("Unable to get device at index %d: %v", i, nvml.ErrorString(result))
+			return nil, fmt.Errorf(("Unable to get device at index %d: %v", i, nvml.ErrorString(result))
 		}
 
 		uuid, result := device.GetUUID()
 
 		if result != nvml.SUCCESS {
-			log.Fatalf("Unable to get uuid of device at index %d: %v", i, nvml.ErrorString(result))
+			return nil, fmt.Errorf(("Unable to get uuid of device at index %d: %v", i, nvml.ErrorString(result))
 		}
 
 		utilization, result := device.GetUtilizationRates()
 
 		if result != nvml.SUCCESS {
-			log.Fatalf("Unable to get GPU utilization of device %v: %v", uuid, nvml.ErrorString(result))
+			return nil, fmt.Errorf(("Unable to get GPU utilization of device %v: %v", uuid, nvml.ErrorString(result))
 		}
 
 		memory, result := device.GetMemoryInfo()
 
 		if result != nvml.SUCCESS {
-			log.Fatalf("Unable to get memory of device %v: %v", uuid, nvml.ErrorString(result))
+			return nil, fmt.Errorf(("Unable to get memory of device %v: %v", uuid, nvml.ErrorString(result))
 		}
 
 		stats[uuid] = GPUStats{
