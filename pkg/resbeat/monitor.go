@@ -221,8 +221,10 @@ func (m *Monitor) collectCPUUsage(ctx context.Context) (*CPUStats, error) {
 	}, nil
 }
 
-func (m *Monitor) Shutdown() {
+func (m *Monitor) Shutdown() error {
 	if m.gpuReader != nil {
-		m.gpuReader.Shutdown()
+		return m.gpuReader.Shutdown()
 	}
+
+	return nil
 }
