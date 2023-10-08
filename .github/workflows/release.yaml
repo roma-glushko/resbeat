@@ -14,11 +14,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    container: nvidia/cuda:12.2.0-devel-ubi9
+    container: nvidia/cuda:12.2.0-devel-ubuntu22.04
     steps:
       - name: Install Git
         run:  apt-get install --no-install-recommends -y -q git
-        
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
