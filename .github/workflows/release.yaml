@@ -13,7 +13,8 @@ permissions:
 
 jobs:
   release:
-    runs-on: gpu
+    runs-on: ubuntu-latest
+    container: nvidia/cuda:12.2.0-devel-ubi9
     steps:
       - uses: actions/checkout@v3
         with:
