@@ -3,17 +3,19 @@
 [![codecov](https://codecov.io/gh/roma-glushko/resbeat/branch/main/graph/badge.svg?token=BNJBL3XJ0O)](https://codecov.io/gh/roma-glushko/resbeat)
 
 resbeat is a container agent that can expose container's resource usage via HTTP or websocket API:
-- /ws/ - a websocket endpoint
-- GET /usage/ - an HTTP polling endpoint
+- `/ws/` - a websocket endpoint
+- GET `/usage/` - an HTTP polling endpoint
 
 resbeat should be installed into the container's image and run along with the main container process.
 
 resbeat could watch the following resources:
-- general system resources via cgroup v1 (CPU and memory usage)
+
+- general system resources via cgroup v1 or v2 (CPU and memory usage)
+- NVIDIA GPU support
 
 ## Usage Report 
 
-```
+```json
 {
     "collectedAt": "2023-06-11T20:01:49.851553Z",
     "cpu": {
@@ -32,6 +34,4 @@ resbeat could watch the following resources:
 ## Plans
 
 resbeat is intended to support more resource types like:
-- general system resources via cgroup v2
 - disk or volume utilization
-- NVIDIA GPU utilization
