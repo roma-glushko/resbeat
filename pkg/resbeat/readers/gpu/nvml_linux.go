@@ -6,7 +6,6 @@ package gpu
 import (
 	"fmt"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
-	"log"
 )
 
 type GPUReader struct {
@@ -35,25 +34,25 @@ func (*GPUReader) GPUStats() (*AllGPUStats, error) {
 		device, result := nvml.DeviceGetHandleByIndex(i)
 
 		if result != nvml.SUCCESS {
-			return nil, fmt.Errorf(("Unable to get device at index %d: %v", i, nvml.ErrorString(result))
+			return nil, fmt.Errorf("Unable to get device at index %d: %v", i, nvml.ErrorString(result))
 		}
 
 		uuid, result := device.GetUUID()
 
 		if result != nvml.SUCCESS {
-			return nil, fmt.Errorf(("Unable to get uuid of device at index %d: %v", i, nvml.ErrorString(result))
+			return nil, fmt.Errorf("Unable to get uuid of device at index %d: %v", i, nvml.ErrorString(result))
 		}
 
 		utilization, result := device.GetUtilizationRates()
 
 		if result != nvml.SUCCESS {
-			return nil, fmt.Errorf(("Unable to get GPU utilization of device %v: %v", uuid, nvml.ErrorString(result))
+			return nil, fmt.Errorf("Unable to get GPU utilization of device %v: %v", uuid, nvml.ErrorString(result))
 		}
 
 		memory, result := device.GetMemoryInfo()
 
 		if result != nvml.SUCCESS {
-			return nil, fmt.Errorf(("Unable to get memory of device %v: %v", uuid, nvml.ErrorString(result))
+			return nil, fmt.Errorf("Unable to get memory of device %v: %v", uuid, nvml.ErrorString(result))
 		}
 
 		stats[uuid] = GPUStats{
