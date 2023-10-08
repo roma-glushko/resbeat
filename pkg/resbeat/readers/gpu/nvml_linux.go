@@ -62,7 +62,7 @@ func (*GPUReader) GPUStats() (*AllGPUStats, error) {
 		}
 	}
 
-	return &stats
+	return &stats, nil
 }
 
 func (*GPUReader) Shutdown() error {
