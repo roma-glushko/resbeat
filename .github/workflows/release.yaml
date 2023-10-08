@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: nvidia/cuda:12.2.0-devel-ubi9
+    runs-on: gpu
     steps:
       - uses: actions/checkout@v3
         with:
