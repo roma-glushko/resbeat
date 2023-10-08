@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 	"math"
 	"reflect"
+	"resbeat/pkg/resbeat/readers/gpu"
 	"resbeat/pkg/resbeat/readers/system"
 	"resbeat/pkg/resbeat/telemetry"
 	"sync"
@@ -13,20 +14,22 @@ import (
 )
 
 type Monitor struct {
-	reader    system.SystemStatsReader
-	mu        *sync.RWMutex
-	prevUsage *Usage
-	usage     *Usage
-	wg        *sync.WaitGroup
+	systemReader system.SystemStatsReader
+	gpuReader    *gpu.GPUReader
+	mu           *sync.RWMutex
+	prevUsage    *Usage
+	usage        *Usage
+	wg           *sync.WaitGroup
 }
 
-func NewMonitor(reader system.SystemStatsReader) *Monitor {
+func NewMonitor(systemReader system.SystemStatsReader, gpuReader *gpu.GPUReader) *Monitor {
 	return &Monitor{
-		reader:    reader,
-		mu:        &sync.RWMutex{},
-		prevUsage: nil,
-		usage:     nil,
-		wg:        &sync.WaitGroup{},
+		systemReader: systemReader,
+		gpuReader:    gpuReader,
+		mu:           &sync.RWMutex{},
+		prevUsage:    nil,
+		usage:        nil,
+		wg:           &sync.WaitGroup{},
 	}
 }
 
@@ -81,9 +84,21 @@ func (m *Monitor) collectUsageOnTick(ctx context.Context) {
 }
 
 func (m *Monitor) collectCurrentUsage(ctx context.Context) *Usage {
+	var gpuStats *gpu.AllGPUStats
+	var err error
+
+	logger := telemetry.FromContext(ctx)
+
+	if m.gpuReader != nil {
+		gpuStats, err = m.gpuReader.GPUStats()
+
+		logger.Error(fmt.Sprintf("error during collecting GPU metrics: %v", err))
+	}
+
 	currentUsage := Usage{
 		CollectedAt: time.Now().UTC(),
 		System:      m.collectSystemUsage(ctx),
+		GPUs:        gpuStats,
 	}
 
 	return &currentUsage
@@ -91,7 +106,7 @@ func (m *Monitor) collectCurrentUsage(ctx context.Context) *Usage {
 
 func (m *Monitor) collectSystemUsage(ctx context.Context) *SystemStats {
 	logger := telemetry.FromContext(ctx)
-	systemReader := m.reader
+	systemReader := m.systemReader
 
 	if systemReader == nil || reflect.ValueOf(systemReader).IsNil() {
 		// the system reader was not inited successfully
@@ -123,11 +138,11 @@ func (m *Monitor) clampPercentage(value float64) float64 {
 }
 
 func (m *Monitor) collectMemoryUsage() (*MemoryStats, error) {
-	if m.reader == nil {
+	systemReader := m.systemReader
+
+	if systemReader == nil || reflect.ValueOf(systemReader).IsNil() {
 		return nil, nil
 	}
-
-	systemReader := m.reader
 
 	memoryUsageInBytes, err := systemReader.MemoryUsageInBytes()
 
@@ -150,12 +165,12 @@ func (m *Monitor) collectMemoryUsage() (*MemoryStats, error) {
 
 func (m *Monitor) collectCPUUsage(ctx context.Context) (*CPUStats, error) {
 	logger := telemetry.FromContext(ctx)
+	systemReader := m.systemReader
 
-	if m.reader == nil {
+	if systemReader == nil || reflect.ValueOf(systemReader).IsNil() {
 		return nil, nil
 	}
 
-	systemReader := m.reader
 	prevUsage := m.prevUsage
 
 	var usagePercentage float64
@@ -204,4 +219,12 @@ func (m *Monitor) collectCPUUsage(ctx context.Context) (*CPUStats, error) {
 		UsageInNanos:            usageDelta,
 		UsagePercentage:         m.clampPercentage(usagePercentage),
 	}, nil
+}
+
+func (m *Monitor) Shutdown() error {
+	if m.gpuReader != nil {
+		return m.gpuReader.Shutdown()
+	}
+
+	return nil
 }

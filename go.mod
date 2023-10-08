@@ -3,6 +3,7 @@ module resbeat
 go 1.20
 
 require (
+	github.com/NVIDIA/go-nvml v0.12.0-1
 	github.com/olahol/melody v1.1.3
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4

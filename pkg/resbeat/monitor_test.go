@@ -11,7 +11,7 @@ import (
 func TestMonitor_ExitOnCanceledCtx(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	reader := system.NewDummyStatsReader(nil, nil, nil, nil)
-	monitor := NewMonitor(reader)
+	monitor := NewMonitor(reader, nil)
 
 	updateC := monitor.Run(ctx, 10*time.Millisecond)
 	<-updateC
@@ -31,7 +31,7 @@ func TestMonitor_CPUUsageReport(t *testing.T) {
 		&usageInNano1,
 		&limInCores,
 	)
-	monitor := NewMonitor(reader)
+	monitor := NewMonitor(reader, nil)
 
 	monitor.collectUsageOnTick(ctx)
 	cpuUsage := monitor.Usage().System.CPU
@@ -63,7 +63,7 @@ func TestMonitor_CPUUsageReport(t *testing.T) {
 func TestMonitor_ErrorToInitSystemReader(t *testing.T) {
 	ctx := context.Background()
 	var noReader *system.DummyStatsReader // we would get nil on system reader init error
-	monitor := NewMonitor(noReader)
+	monitor := NewMonitor(noReader, nil)
 
 	monitor.collectUsageOnTick(ctx)
 	usage := monitor.Usage()
@@ -75,7 +75,7 @@ func TestMonitor_ErrorToInitSystemReader(t *testing.T) {
 func BenchmarkMonitor_CGroupV2UsageCollection(b *testing.B) {
 	ctx := context.Background()
 	reader := system.NewCGroupV2Reader("../../../../tests/fixtures/cgroupv2")
-	monitor := NewMonitor(reader)
+	monitor := NewMonitor(reader, nil)
 
 	b.ReportAllocs()
 
