@@ -6,7 +6,9 @@ resbeat is a container agent that can expose container's resource usage via HTTP
 - `/ws/` - a websocket endpoint
 - GET `/usage/` - an HTTP polling endpoint
 
-resbeat should be installed into the container's image and run along with the main container process.
+resbeat should be installed into the container's image and run along with the main container process. 
+Then, you should expose resbeat's port to let the rest of your system to scrape/consume container's/pod's utilization.
+This is useful for building functionality around the usage reports like showing the user's env utilization somewhere in your UI.
 
 resbeat could watch the following resources:
 
