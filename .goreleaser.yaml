@@ -7,16 +7,7 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - id: rebeat
-    env:
-      - CGO_ENABLED=0
-      - CGO_LDFLAGS_ALLOW="-Wl,--unresolved-symbols=ignore-in-object-files"
-    goos:
-      - windows
-      - darwin
-    ldflags:
-      - -s -w -X main.commitSha={{ .Commit }} -X main.version={{ .Version }}
-  - id: resbeat-linux
+  - id: resbeat
     env:
       - CGO_LDFLAGS_ALLOW="-Wl,--unresolved-symbols=ignore-in-object-files"
     ldflags:
@@ -25,6 +16,7 @@ builds:
       - linux
     goarch:
       - amd64
+      - 386
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
