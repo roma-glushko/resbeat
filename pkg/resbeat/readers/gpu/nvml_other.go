@@ -3,14 +3,17 @@
 
 package gpu
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 var ERR_GPU_NOT_SUPPORTED = errors.New("GPU monitoring is supported only on Linux (with the NVML toolchain installed)")
 
 type GPUReader struct {
 }
 
-func (*GPUReader) Init() error {
+func (*GPUReader) Init(ctx context.Context) error {
 	return ERR_GPU_NOT_SUPPORTED
 }
 

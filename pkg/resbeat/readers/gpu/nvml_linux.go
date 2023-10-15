@@ -4,6 +4,7 @@
 package gpu
 
 import (
+	"context"
 	"fmt"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 )
@@ -11,24 +12,33 @@ import (
 type GPUReader struct {
 }
 
-func (*GPUReader) Init() error {
+func (r *GPUReader) Init(ctx context.Context) error {
+	logger := telemetry.FromContext(ctx)
 	result := nvml.Init()
 
 	if result != nvml.SUCCESS {
 		return fmt.Errorf("Unable to initialize NVML: %v", nvml.ErrorString(result))
 	}
 
+	count, err := r.GetGPUCount()
+
+	if err != nil {
+		return err
+	}
+
+	logger.Debug(fmt.Sprintf("Found %v GPU device(s)", count))
+
 	return nil
 }
 
-func (*GPUReader) GPUStats() (*AllGPUStats, error) {
-	count, result := nvml.DeviceGetCount()
-
-	if result != nvml.SUCCESS {
-		return nil, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
-	}
-
+func (r *GPUReader) GPUStats() (*AllGPUStats, error) {
 	stats := make(map[string]GPUStats, count)
+
+	count, err := r.GetGPUCount()
+
+	if err != nil {
+		return nil, err
+	}
 
 	for i := 0; i < count; i++ {
 		device, result := nvml.DeviceGetHandleByIndex(i)
@@ -65,7 +75,17 @@ func (*GPUReader) GPUStats() (*AllGPUStats, error) {
 	return &stats, nil
 }
 
-func (*GPUReader) Shutdown() error {
+func (r *GPUReader) GetGPUCount() (int, err) {
+	count, result := nvml.DeviceGetCount()
+
+	if result != nvml.SUCCESS {
+		return nil, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
+	}
+
+	return count, nil
+}
+
+func (r *GPUReader) Shutdown() error {
 	result := nvml.Shutdown()
 
 	if result != nvml.SUCCESS {
