@@ -42,9 +42,9 @@ curl -fSL https://github.com/roma-glushko/resbeat/releases/download/1.0.4-dev2/r
   },
   "gpus": {
     "GPU-2f5095ab-d1d7-5b23-3599-1693e0a18016": {
-      "UsagePercentage": 0,
-      "MemoryUsedInBytes": 0,
-      "TotalMemoryInBytes": 17071734784
+      "usagePercentage": 0,
+      "memoryUsedInBytes": 0,
+      "totalMemoryInBytes": 17071734784
     }
   }
 }
