@@ -7,13 +7,15 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - id: rebeat-other
+  - id: rebeat
     env:
       - CGO_ENABLED=0
     goos:
       - windows
       - darwin
-  - id: resbeat-linux
+  - id: resbeat-gpu
+    env:
+      - CGO_LDFLAGS_ALLOW="-Wl,--unresolved-symbols=ignore-in-object-files"
     goos:
       - linux
 archives:
