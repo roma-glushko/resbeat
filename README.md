@@ -27,17 +27,26 @@ curl -fSL https://github.com/roma-glushko/resbeat/releases/download/1.0.4-dev2/r
 
 ```json
 {
-    "collectedAt": "2023-06-11T20:01:49.851553Z",
+  "collectedAt": "2023-10-15T16:18:43.870139213Z",
+  "system": {
     "cpu": {
-        "usageInNanos": 150000000,
-        "limitInCors": 3,
-        "usagePercentage": 0
+      "usageInNanos": 67748000,
+      "limitInCors": 2,
+      "usagePercentage": 0.011306116551813019
     },
     "memory": {
-        "usagePercentage": 0.1220703125,
-        "limitInBytes": 1073741824,
-        "usageInBytes": 131072000
+      "usagePercentage": 0.054570711576021634,
+      "limitInBytes": 13958643712,
+      "usageInBytes": 761733120
     }
+  },
+  "gpus": {
+    "GPU-2f5095ab-d1d7-5b23-3599-1693e0a18016": {
+      "UsagePercentage": 0,
+      "MemoryUsedInBytes": 0,
+      "TotalMemoryInBytes": 17071734784
+    }
+  }
 }
 ```
 
