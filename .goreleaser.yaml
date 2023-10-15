@@ -16,13 +16,15 @@ builds:
       - darwin
     ldflags:
       - -s -w -X main.commitSha={{ .Commit }} -X main.version={{ .Version }}
-  - id: resbeat-gpu
+  - id: resbeat-linux
     env:
       - CGO_LDFLAGS_ALLOW="-Wl,--unresolved-symbols=ignore-in-object-files"
     ldflags:
       - -s -w -X main.commitSha={{ .Commit }} -X main.version={{ .Version }}
     goos:
       - linux
+    goarch:
+      - amd64
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
