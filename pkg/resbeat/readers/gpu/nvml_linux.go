@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
+	"resbeat/pkg/resbeat/telemetry"
 )
 
 type GPUReader struct {
@@ -32,13 +33,13 @@ func (r *GPUReader) Init(ctx context.Context) error {
 }
 
 func (r *GPUReader) GPUStats() (*AllGPUStats, error) {
-	stats := make(map[string]GPUStats, count)
-
 	count, err := r.GetGPUCount()
 
 	if err != nil {
 		return nil, err
 	}
+
+	stats := make(map[string]GPUStats, count)
 
 	for i := 0; i < count; i++ {
 		device, result := nvml.DeviceGetHandleByIndex(i)
@@ -75,11 +76,11 @@ func (r *GPUReader) GPUStats() (*AllGPUStats, error) {
 	return &stats, nil
 }
 
-func (r *GPUReader) GetGPUCount() (int, err) {
+func (r *GPUReader) GetGPUCount() (int, error) {
 	count, result := nvml.DeviceGetCount()
 
 	if result != nvml.SUCCESS {
-		return nil, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
+		return 0, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
 	}
 
 	return count, nil
