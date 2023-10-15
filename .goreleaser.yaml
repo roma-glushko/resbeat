@@ -7,12 +7,14 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - env:
+  - id: rebeat-other
+    env:
       - CGO_ENABLED=0
     goos:
       - windows
       - darwin
-  - goos:
+  - id: resbeat-linux
+    goos:
       - linux
 archives:
   - format: tar.gz
