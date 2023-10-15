@@ -17,7 +17,7 @@ func (*GPUReader) Init(ctx context.Context) error {
 	return ERR_GPU_NOT_SUPPORTED
 }
 
-func (*GPUReader) GPUStats() (*AllGPUStats, error) {
+func (*GPUReader) GPUStats(ctx context.Context) (*AllGPUStats, error) {
 	return nil, ERR_GPU_NOT_SUPPORTED
 }
 

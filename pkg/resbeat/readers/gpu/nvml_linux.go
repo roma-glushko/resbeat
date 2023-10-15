@@ -21,23 +21,24 @@ func (r *GPUReader) Init(ctx context.Context) error {
 		return fmt.Errorf("Unable to initialize NVML: %v", nvml.ErrorString(result))
 	}
 
-	count, err := r.GetGPUCount()
-
-	if err != nil {
-		return err
-	}
-
-	logger.Debug(fmt.Sprintf("Found %v GPU device(s)", count))
-
 	return nil
 }
 
-func (r *GPUReader) GPUStats() (*AllGPUStats, error) {
-	count, err := r.GetGPUCount()
+func (r *GPUReader) GPUStats(ctx context.Context) (*AllGPUStats, error) {
+	logger := telemetry.FromContext(ctx)
+	result := nvml.Init()
 
-	if err != nil {
-		return nil, err
+	if result != nvml.SUCCESS {
+		return fmt.Errorf("Unable to initialize NVML: %v", nvml.ErrorString(result))
 	}
+
+	count, result := nvml.DeviceGetCount()
+
+	if result != nvml.SUCCESS {
+		return 0, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
+	}
+
+	logger.Debug(fmt.Sprintf("Found %v GPU device(s)", count))
 
 	stats := make(map[string]GPUStats, count)
 
@@ -53,6 +54,8 @@ func (r *GPUReader) GPUStats() (*AllGPUStats, error) {
 		if result != nvml.SUCCESS {
 			return nil, fmt.Errorf("Unable to get uuid of device at index %d: %v", i, nvml.ErrorString(result))
 		}
+
+		logger.Debug(fmt.Sprintf("GPU no %v - %v", i, uuid))
 
 		utilization, result := device.GetUtilizationRates()
 

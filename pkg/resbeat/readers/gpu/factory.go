@@ -13,7 +13,7 @@ func NewGPUReader(ctx context.Context) (*GPUReader, error) {
 		return nil, err
 	}
 
-	logger.Info("GPU driver is initialized")
+	logger.Info("NVML is initialized")
 
 	return &reader, nil
 }
