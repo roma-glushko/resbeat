@@ -16,6 +16,10 @@ builds:
       - linux
     goarch:
       - amd64
+    goamd64:
+      - v1
+      - v2
+      - v3
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
