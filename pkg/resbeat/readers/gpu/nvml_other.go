@@ -13,7 +13,7 @@ var ERR_GPU_NOT_SUPPORTED = errors.New("GPU monitoring is supported only on Linu
 type GPUReader struct {
 }
 
-func (*GPUReader) Init(ctx context.Context) error {
+func (*GPUReader) Init() error {
 	return ERR_GPU_NOT_SUPPORTED
 }
 

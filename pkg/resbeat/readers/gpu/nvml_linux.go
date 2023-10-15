@@ -13,8 +13,7 @@ import (
 type GPUReader struct {
 }
 
-func (r *GPUReader) Init(ctx context.Context) error {
-	logger := telemetry.FromContext(ctx)
+func (r *GPUReader) Init() error {
 	result := nvml.Init()
 
 	if result != nvml.SUCCESS {
@@ -29,13 +28,13 @@ func (r *GPUReader) GPUStats(ctx context.Context) (*AllGPUStats, error) {
 	result := nvml.Init()
 
 	if result != nvml.SUCCESS {
-		return fmt.Errorf("Unable to initialize NVML: %v", nvml.ErrorString(result))
+		return nil, fmt.Errorf("Unable to initialize NVML: %v", nvml.ErrorString(result))
 	}
 
 	count, result := nvml.DeviceGetCount()
 
 	if result != nvml.SUCCESS {
-		return 0, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
+		return nil, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
 	}
 
 	logger.Debug(fmt.Sprintf("Found %v GPU device(s)", count))

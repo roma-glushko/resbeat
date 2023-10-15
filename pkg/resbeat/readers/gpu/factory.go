@@ -9,7 +9,7 @@ func NewGPUReader(ctx context.Context) (*GPUReader, error) {
 	logger := telemetry.FromContext(ctx)
 	var reader GPUReader
 
-	if err := reader.Init(ctx); err != nil {
+	if err := reader.Init(); err != nil {
 		return nil, err
 	}
 
