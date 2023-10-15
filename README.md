@@ -15,6 +15,14 @@ resbeat could watch the following resources:
 - general system resources via cgroup v1 or v2 (CPU and memory usage)
 - NVIDIA GPU support
 
+## Installation
+
+```bash
+curl -fSL https://github.com/roma-glushko/resbeat/releases/download/1.0.4-dev2/resbeat_Linux_x86_64.tar.gz -o "./resbeat_Linux_x86_64.tar.gz" \
+    && tar -vxf resbeat_Linux_x86_64.tar.gz \
+    && chmod +x ./resbeat
+```
+
 ## Usage Report 
 
 ```json
