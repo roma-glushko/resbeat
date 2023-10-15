@@ -10,12 +10,17 @@ builds:
   - id: rebeat
     env:
       - CGO_ENABLED=0
+      - CGO_LDFLAGS_ALLOW="-Wl,--unresolved-symbols=ignore-in-object-files"
     goos:
       - windows
       - darwin
+    ldflags:
+      - -s -w -X main.commitSha={{ .Commit }} -X main.version={{ .Version }}
   - id: resbeat-gpu
     env:
       - CGO_LDFLAGS_ALLOW="-Wl,--unresolved-symbols=ignore-in-object-files"
+    ldflags:
+      - -s -w -X main.commitSha={{ .Commit }} -X main.version={{ .Version }}
     goos:
       - linux
 archives:
