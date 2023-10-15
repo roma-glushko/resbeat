@@ -18,7 +18,7 @@ resbeat could watch the following resources:
 ## Installation
 
 ```bash
-curl -fSL https://github.com/roma-glushko/resbeat/releases/download/1.0.4-dev2/resbeat_Linux_x86_64.tar.gz -o "./resbeat_Linux_x86_64.tar.gz" \
+curl -fSL https://github.com/roma-glushko/resbeat/releases/download/1.0.4-dev5/resbeat_Linux_x86_64.tar.gz -o "./resbeat_Linux_x86_64.tar.gz" \
     && tar -vxf resbeat_Linux_x86_64.tar.gz \
     && chmod +x ./resbeat
 ```
