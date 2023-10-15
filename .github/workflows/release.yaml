@@ -14,10 +14,15 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    container: nvidia/cuda:12.2.0-devel-ubuntu20.04
     steps:
+      - name: Install Git
+        run:  apt-get update && apt-get install --no-install-recommends -y -q git && git config --global --add safe.directory /__w/resbeat/resbeat
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
       - run: git fetch --force --tags
       - uses: actions/setup-go@v4
         with:

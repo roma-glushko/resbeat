@@ -1,5 +1,4 @@
 # syntax=docker/dockerfile:1
-ARG CUDA_IMAGE=cuda
 ARG CUDA_VERSION=12.2.0
 ARG BASE_DIST=ubuntu20.04
 
@@ -13,8 +12,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y -q
 RUN curl -s https://storage.googleapis.com/golang/go$GOLANG_VERSION.linux-amd64.tar.gz | tar -v -C /usr/local -xz
 ENV PATH $PATH:/usr/local/go/bin
 
-RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.53.3
-
 WORKDIR /service
 
 COPY go.mod go.sum main.go /service/
+COPY ./pkg /service/pkg

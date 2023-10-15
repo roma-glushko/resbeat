@@ -36,7 +36,7 @@ func NewResBeat(ctx context.Context, gpuSupport bool) *ResBeat {
 	var gpuReader *gpu.GPUReader
 
 	if gpuSupport {
-		gpuReader, err = gpu.NewGPUReader()
+		gpuReader, err = gpu.NewGPUReader(ctx)
 
 		if err != nil {
 			logger.Error(fmt.Sprintf("could not init a GPU stats reader: %v", err))

@@ -4,14 +4,16 @@
 package gpu
 
 import (
+	"context"
 	"fmt"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
+	"resbeat/pkg/resbeat/telemetry"
 )
 
 type GPUReader struct {
 }
 
-func (*GPUReader) Init() error {
+func (r *GPUReader) Init() error {
 	result := nvml.Init()
 
 	if result != nvml.SUCCESS {
@@ -21,12 +23,21 @@ func (*GPUReader) Init() error {
 	return nil
 }
 
-func (*GPUReader) GPUStats() (*AllGPUStats, error) {
+func (r *GPUReader) GPUStats(ctx context.Context) (*AllGPUStats, error) {
+	logger := telemetry.FromContext(ctx)
+	result := nvml.Init()
+
+	if result != nvml.SUCCESS {
+		return nil, fmt.Errorf("Unable to initialize NVML: %v", nvml.ErrorString(result))
+	}
+
 	count, result := nvml.DeviceGetCount()
 
 	if result != nvml.SUCCESS {
 		return nil, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
 	}
+
+	logger.Debug(fmt.Sprintf("Found %v GPU device(s)", count))
 
 	stats := make(map[string]GPUStats, count)
 
@@ -42,6 +53,8 @@ func (*GPUReader) GPUStats() (*AllGPUStats, error) {
 		if result != nvml.SUCCESS {
 			return nil, fmt.Errorf("Unable to get uuid of device at index %d: %v", i, nvml.ErrorString(result))
 		}
+
+		logger.Debug(fmt.Sprintf("GPU no %v - %v", i, uuid))
 
 		utilization, result := device.GetUtilizationRates()
 
@@ -65,7 +78,17 @@ func (*GPUReader) GPUStats() (*AllGPUStats, error) {
 	return &stats, nil
 }
 
-func (*GPUReader) Shutdown() error {
+func (r *GPUReader) GetGPUCount() (int, error) {
+	count, result := nvml.DeviceGetCount()
+
+	if result != nvml.SUCCESS {
+		return 0, fmt.Errorf("Unable to get device count: %v", nvml.ErrorString(result))
+	}
+
+	return count, nil
+}
+
+func (r *GPUReader) Shutdown() error {
 	result := nvml.Shutdown()
 
 	if result != nvml.SUCCESS {

@@ -3,7 +3,10 @@
 
 package gpu
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 var ERR_GPU_NOT_SUPPORTED = errors.New("GPU monitoring is supported only on Linux (with the NVML toolchain installed)")
 
@@ -14,7 +17,7 @@ func (*GPUReader) Init() error {
 	return ERR_GPU_NOT_SUPPORTED
 }
 
-func (*GPUReader) GPUStats() (*AllGPUStats, error) {
+func (*GPUReader) GPUStats(ctx context.Context) (*AllGPUStats, error) {
 	return nil, ERR_GPU_NOT_SUPPORTED
 }
 
