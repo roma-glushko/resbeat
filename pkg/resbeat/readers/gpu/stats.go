@@ -3,7 +3,7 @@ package gpu
 type AllGPUStats = map[string]GPUStats
 
 type GPUStats struct {
-	UsagePercentage    uint32
-	MemoryUsedInBytes  uint64
-	TotalMemoryInBytes uint64
+	UsagePercentage    uint32 `json:"usagePercentage"`
+	MemoryUsedInBytes  uint64 `json:"memoryUsedInBytes"`
+	TotalMemoryInBytes uint64 `json:"totalMemoryInBytes"`
 }
