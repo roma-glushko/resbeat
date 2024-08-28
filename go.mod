@@ -3,10 +3,10 @@ module resbeat
 go 1.23.0
 
 require (
-	github.com/NVIDIA/go-nvml v0.12.0-1
+	github.com/NVIDIA/go-nvml v0.12.4-0
 	github.com/olahol/melody v1.1.3
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.25.3
 	go.elastic.co/ecszap v1.0.1
 	go.uber.org/zap v1.24.0
