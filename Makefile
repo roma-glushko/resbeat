@@ -4,7 +4,7 @@ GOARCH?=amd64
 CGO_ENABLED?=0
 CLI_VERSION_PACKAGE := main
 COMMIT ?= $(shell git describe --dirty --long --always --abbrev=15)
-VERSION := $(shell cat ./VERSION)
+VERSION := $(shell git describe --tags --dirty --abbrev=0)
 CGO_LDFLAGS_ALLOW := "-Wl,--unresolved-symbols=ignore-in-object-files"
 LDFLAGS_COMMON := "-s -w -X $(CLI_VERSION_PACKAGE).commitSha=$(COMMIT) -X $(CLI_VERSION_PACKAGE).version=$(VERSION)"
 
