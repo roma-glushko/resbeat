@@ -35,9 +35,6 @@ generate:
 image:
 	@docker build --tag romahlushko/resbeat .
 
-image-build:
-	@docker build --tag romahlushko/resbeat-build -f build.Dockerfile .
-
 COVERAGE_FILE ?= coverage.out
 
 test: ## Run all tests
